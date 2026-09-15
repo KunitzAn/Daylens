@@ -31,10 +31,19 @@ export interface Entry {
   dirty: boolean // не синхронизировано с сервером
 }
 
+export interface Setting {
+  key: string
+  value: string
+}
+
+export const ACTIVE_MOOD_SET_KEY = 'activeMoodSetId'
+export const DEFAULT_MOOD_SET_ID = 'emoji'
+
 export const db = new Dexie('daylens') as Dexie & {
   categories: EntityTable<Category, 'id'>
   tags: EntityTable<Tag, 'id'>
   entries: EntityTable<Entry, 'id'>
+  settings: EntityTable<Setting, 'key'>
 }
 
 db.version(1).stores({
@@ -43,7 +52,17 @@ db.version(1).stores({
   // &date — уникальный индекс, даёт правило «одна запись в день» на уровне IndexedDB
   // *tagIds — multi-entry индекс, позволяет искать записи по отдельному тегу
   entries: 'id, &date, dirty, deletedAt, *tagIds',
+  settings: 'key',
 })
+
+export async function getActiveMoodSetId(): Promise<string> {
+  const row = await db.settings.get(ACTIVE_MOOD_SET_KEY)
+  return row?.value ?? DEFAULT_MOOD_SET_ID
+}
+
+export async function setActiveMoodSetId(moodSetId: string): Promise<void> {
+  await db.settings.put({ key: ACTIVE_MOOD_SET_KEY, value: moodSetId })
+}
 
 interface DefaultTag {
   name: string

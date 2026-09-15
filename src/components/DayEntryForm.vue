@@ -2,14 +2,29 @@
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { archiveCategory, db, type Category, type Entry, type Tag } from '../lib/db'
+import {
+  ACTIVE_MOOD_SET_KEY,
+  DEFAULT_MOOD_SET_ID,
+  archiveCategory,
+  db,
+  type Category,
+  type Entry,
+  type Tag,
+} from '../lib/db'
 import { formatDateHuman } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
+import { resolveMoodSet } from '../lib/moodSets'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const props = defineProps<{ date: string }>()
 const router = useRouter()
+
+const activeMoodSetId = useLiveQuery<string>(
+  () => db.settings.get(ACTIVE_MOOD_SET_KEY).then((row) => row?.value ?? DEFAULT_MOOD_SET_ID),
+  DEFAULT_MOOD_SET_ID,
+)
+const activeMoodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
 
 const categories = useLiveQuery<Category[]>(
   () => db.categories.orderBy('sortOrder').filter((c) => c.archivedAt === null).toArray(),
@@ -105,18 +120,34 @@ async function save() {
       <h1 class="text-xl font-semibold text-neutral-800">Как прошёл день?</h1>
     </header>
 
-    <div class="flex flex-wrap justify-center gap-2">
+    <div class="flex flex-col items-center gap-2">
+      <div class="flex flex-wrap justify-center gap-2">
+        <button
+          v-for="level in MOOD_LEVELS"
+          :key="level.value"
+          type="button"
+          :aria-label="level.label"
+          :title="level.label"
+          @click="mood = level.value"
+          class="w-12 h-12 rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
+          :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
+        >
+          <img
+            v-if="activeMoodSet.images"
+            :src="activeMoodSet.images[level.value - 1]"
+            :alt="level.label"
+            class="w-full h-full object-cover"
+          />
+          <span v-else class="text-2xl">{{ level.emoji }}</span>
+        </button>
+      </div>
+
       <button
-        v-for="level in MOOD_LEVELS"
-        :key="level.value"
         type="button"
-        :aria-label="level.label"
-        :title="level.label"
-        @click="mood = level.value"
-        class="w-12 h-12 rounded-2xl text-2xl bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
-        :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
+        @click="router.push('/mood-sets')"
+        class="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1"
       >
-        {{ level.emoji }}
+        <Pencil :size="11" /> {{ activeMoodSet.name }}
       </button>
     </div>
 

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CategoryEditView from './views/CategoryEditView.vue'
 import EntryView from './views/EntryView.vue'
+import MoodSetsView from './views/MoodSetsView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -13,5 +14,6 @@ export const router = createRouter({
       component: CategoryEditView,
       props: true,
     },
+    { path: '/mood-sets', name: 'mood-sets', component: MoodSetsView },
   ],
 })
