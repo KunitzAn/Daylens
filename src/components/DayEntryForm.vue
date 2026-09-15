@@ -1,20 +1,35 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { db, type Entry } from '../lib/db'
+import { db, type Category, type Entry, type Tag } from '../lib/db'
 import { formatDateHuman } from '../lib/date'
+import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const props = defineProps<{ date: string }>()
 
-const spheres = useLiveQuery(
-  () => db.spheres.orderBy('sortOrder').filter((s) => s.archivedAt === null).toArray(),
+const categories = useLiveQuery<Category[]>(
+  () => db.categories.orderBy('sortOrder').filter((c) => c.archivedAt === null).toArray(),
+  [],
+)
+const tags = useLiveQuery<Tag[]>(
+  () => db.tags.orderBy('sortOrder').filter((t) => t.archivedAt === null).toArray(),
   [],
 )
 
+const tagsByCategory = computed(() => {
+  const map = new Map<string, Tag[]>()
+  for (const tag of tags.value) {
+    const list = map.get(tag.categoryId) ?? []
+    list.push(tag)
+    map.set(tag.categoryId, list)
+  }
+  return map
+})
+
 const entryId = ref<string | null>(null)
 const mood = ref<number | null>(null)
-const selectedSphereIds = ref<string[]>([])
+const selectedTagIds = ref<string[]>([])
 const note = ref('')
 const justSaved = ref(false)
 let justSavedTimeout: ReturnType<typeof setTimeout> | undefined
@@ -23,17 +38,17 @@ async function loadEntry(date: string) {
   const existing = await db.entries.where('date').equals(date).first()
   entryId.value = existing?.id ?? null
   mood.value = existing?.mood ?? null
-  selectedSphereIds.value = existing?.sphereIds ?? []
+  selectedTagIds.value = existing?.tagIds ?? []
   note.value = existing?.note ?? ''
   justSaved.value = false
 }
 
 watch(() => props.date, loadEntry, { immediate: true })
 
-function toggleSphere(id: string) {
-  const i = selectedSphereIds.value.indexOf(id)
-  if (i === -1) selectedSphereIds.value.push(id)
-  else selectedSphereIds.value.splice(i, 1)
+function toggleTag(id: string) {
+  const i = selectedTagIds.value.indexOf(id)
+  if (i === -1) selectedTagIds.value.push(id)
+  else selectedTagIds.value.splice(i, 1)
 }
 
 const canSave = computed(() => mood.value !== null)
@@ -45,7 +60,7 @@ async function save() {
   if (entryId.value) {
     const patch: Partial<Entry> = {
       mood: mood.value,
-      sphereIds: [...selectedSphereIds.value],
+      tagIds: [...selectedTagIds.value],
       note: note.value,
       updatedAt: now,
       dirty: true,
@@ -58,7 +73,7 @@ async function save() {
       date: props.date,
       mood: mood.value,
       note: note.value,
-      sphereIds: [...selectedSphereIds.value],
+      tagIds: [...selectedTagIds.value],
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -97,21 +112,42 @@ async function save() {
       </button>
     </div>
 
-    <div class="flex flex-wrap justify-center gap-2">
-      <button
-        v-for="sphere in spheres"
-        :key="sphere.id"
-        type="button"
-        @click="toggleSphere(sphere.id)"
-        class="px-4 py-2 rounded-full text-sm transition-colors"
-        :class="
-          selectedSphereIds.includes(sphere.id)
-            ? 'bg-violet-400 text-white shadow-[inset_1px_1px_3px_rgba(0,0,0,0.15)]'
-            : 'bg-white text-neutral-600 shadow-[0_4px_8px_rgba(0,0,0,0.06)]'
-        "
-      >
-        {{ sphere.emoji }} {{ sphere.name }}
-      </button>
+    <div class="w-full flex flex-col gap-6">
+      <section v-for="category in categories" :key="category.id" class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium flex items-center gap-2" :style="{ color: category.color }">
+          <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: category.color }" />
+          {{ category.name }}
+        </h2>
+
+        <div class="flex flex-wrap gap-3">
+          <button
+            v-for="tag in tagsByCategory.get(category.id) ?? []"
+            :key="tag.id"
+            type="button"
+            :title="tag.name"
+            @click="toggleTag(tag.id)"
+            class="flex flex-col items-center gap-1 w-16"
+          >
+            <span
+              class="w-14 h-14 rounded-full flex items-center justify-center border-2 transition-transform"
+              :class="selectedTagIds.includes(tag.id) ? 'scale-105' : ''"
+              :style="
+                selectedTagIds.includes(tag.id)
+                  ? { backgroundColor: category.color, borderColor: category.color }
+                  : { backgroundColor: 'white', borderColor: category.color }
+              "
+            >
+              <component
+                :is="resolveIcon(tag.icon)"
+                :size="22"
+                :stroke-width="2"
+                :style="{ color: selectedTagIds.includes(tag.id) ? 'white' : category.color }"
+              />
+            </span>
+            <span class="text-xs text-neutral-600 text-center leading-tight">{{ tag.name }}</span>
+          </button>
+        </div>
+      </section>
     </div>
 
     <textarea

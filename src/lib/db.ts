@@ -1,9 +1,19 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-export interface Sphere {
+export interface Category {
   id: string
   name: string
-  emoji: string
+  color: string // hex, все иконки тегов этой категории красятся в него
+  sortOrder: number
+  archivedAt: string | null
+  updatedAt: string
+}
+
+export interface Tag {
+  id: string
+  categoryId: string
+  name: string
+  icon: string // имя компонента из @lucide/vue, напр. "Moon"
   sortOrder: number
   archivedAt: string | null
   updatedAt: string
@@ -14,7 +24,7 @@ export interface Entry {
   date: string // YYYY-MM-DD, локальная дата — уникальна на юзера
   mood: number // 1–7
   note: string
-  sphereIds: string[]
+  tagIds: string[]
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -22,39 +32,121 @@ export interface Entry {
 }
 
 export const db = new Dexie('daylens') as Dexie & {
-  spheres: EntityTable<Sphere, 'id'>
+  categories: EntityTable<Category, 'id'>
+  tags: EntityTable<Tag, 'id'>
   entries: EntityTable<Entry, 'id'>
 }
 
 db.version(1).stores({
+  categories: 'id, sortOrder, archivedAt',
+  tags: 'id, categoryId, sortOrder, archivedAt',
   // &date — уникальный индекс, даёт правило «одна запись в день» на уровне IndexedDB
-  // *sphereIds — multi-entry индекс, позволяет искать записи по отдельной сфере
-  entries: 'id, &date, dirty, deletedAt, *sphereIds',
-  spheres: 'id, sortOrder, archivedAt',
+  // *tagIds — multi-entry индекс, позволяет искать записи по отдельному тегу
+  entries: 'id, &date, dirty, deletedAt, *tagIds',
 })
 
-const DEFAULT_SPHERES: Array<Pick<Sphere, 'name' | 'emoji'>> = [
-  { name: 'Сон', emoji: '😴' },
-  { name: 'Работа', emoji: '💼' },
-  { name: 'Спорт', emoji: '🏃' },
-  { name: 'Люди', emoji: '👥' },
-  { name: 'Учёба', emoji: '📚' },
-  { name: 'Отдых', emoji: '🌿' },
+interface DefaultTag {
+  name: string
+  icon: string
+}
+
+interface DefaultCategory {
+  name: string
+  color: string
+  tags: DefaultTag[]
+}
+
+const DEFAULT_CATEGORIES: DefaultCategory[] = [
+  {
+    name: 'Сон',
+    color: '#818cf8',
+    tags: [
+      { name: 'Выспался', icon: 'Moon' },
+      { name: 'Лёг рано', icon: 'BedDouble' },
+      { name: 'Мало спал', icon: 'AlarmClock' },
+      { name: 'Дневной сон', icon: 'Sun' },
+    ],
+  },
+  {
+    name: 'Работа',
+    color: '#fbbf24',
+    tags: [
+      { name: 'Продуктивный день', icon: 'Briefcase' },
+      { name: 'Удалёнка', icon: 'Laptop' },
+      { name: 'Встречи', icon: 'Presentation' },
+      { name: 'Завал в почте', icon: 'Mail' },
+    ],
+  },
+  {
+    name: 'Спорт',
+    color: '#34d399',
+    tags: [
+      { name: 'Тренировка', icon: 'Dumbbell' },
+      { name: 'Прогулка', icon: 'Footprints' },
+      { name: 'Велосипед', icon: 'Bike' },
+      { name: 'Растяжка', icon: 'PersonStanding' },
+    ],
+  },
+  {
+    name: 'Люди',
+    color: '#38bdf8',
+    tags: [
+      { name: 'Друзья', icon: 'Users' },
+      { name: 'Свидание', icon: 'Heart' },
+      { name: 'Созвон', icon: 'PhoneCall' },
+      { name: 'Переписка', icon: 'MessageCircle' },
+    ],
+  },
+  {
+    name: 'Учёба',
+    color: '#fb7185',
+    tags: [
+      { name: 'Читал', icon: 'BookOpen' },
+      { name: 'Курс', icon: 'GraduationCap' },
+      { name: 'Писал', icon: 'PenLine' },
+      { name: 'Учил новое', icon: 'Brain' },
+    ],
+  },
+  {
+    name: 'Отдых',
+    color: '#2dd4bf',
+    tags: [
+      { name: 'Природа', icon: 'Leaf' },
+      { name: 'Игры', icon: 'Gamepad2' },
+      { name: 'Кино/сериал', icon: 'Film' },
+      { name: 'Творчество', icon: 'Palette' },
+    ],
+  },
 ]
 
-export async function ensureDefaultSpheresSeeded(): Promise<void> {
-  const count = await db.spheres.count()
+export async function ensureDefaultCategoriesSeeded(): Promise<void> {
+  const count = await db.categories.count()
   if (count > 0) return
 
   const now = new Date().toISOString()
-  await db.spheres.bulkAdd(
-    DEFAULT_SPHERES.map((sphere, index) => ({
-      id: crypto.randomUUID(),
-      name: sphere.name,
-      emoji: sphere.emoji,
-      sortOrder: index,
-      archivedAt: null,
-      updatedAt: now,
-    })),
-  )
+
+  await db.transaction('rw', db.categories, db.tags, async () => {
+    for (const [categoryIndex, category] of DEFAULT_CATEGORIES.entries()) {
+      const categoryId = crypto.randomUUID()
+      await db.categories.add({
+        id: categoryId,
+        name: category.name,
+        color: category.color,
+        sortOrder: categoryIndex,
+        archivedAt: null,
+        updatedAt: now,
+      })
+      await db.tags.bulkAdd(
+        category.tags.map((tag, tagIndex) => ({
+          id: crypto.randomUUID(),
+          categoryId,
+          name: tag.name,
+          icon: tag.icon,
+          sortOrder: tagIndex,
+          archivedAt: null,
+          updatedAt: now,
+        })),
+      )
+    }
+  })
 }
