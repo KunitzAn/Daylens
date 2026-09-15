@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { db, type Category, type Entry, type Tag } from '../lib/db'
+import { useRouter } from 'vue-router'
+import { archiveCategory, db, type Category, type Entry, type Tag } from '../lib/db'
 import { formatDateHuman } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const props = defineProps<{ date: string }>()
+const router = useRouter()
 
 const categories = useLiveQuery<Category[]>(
   () => db.categories.orderBy('sortOrder').filter((c) => c.archivedAt === null).toArray(),
@@ -49,6 +52,11 @@ function toggleTag(id: string) {
   const i = selectedTagIds.value.indexOf(id)
   if (i === -1) selectedTagIds.value.push(id)
   else selectedTagIds.value.splice(i, 1)
+}
+
+async function deleteCategory(category: Category) {
+  if (!confirm(`Удалить раздел «${category.name}»? Все его теги тоже скроются из выбора.`)) return
+  await archiveCategory(category.id)
 }
 
 const canSave = computed(() => mood.value !== null)
@@ -115,8 +123,26 @@ async function save() {
     <div class="w-full flex flex-col gap-6">
       <section v-for="category in categories" :key="category.id" class="flex flex-col gap-3">
         <h2 class="text-sm font-medium flex items-center gap-2" :style="{ color: category.color }">
-          <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: category.color }" />
-          {{ category.name }}
+          <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: category.color }" />
+          <span class="truncate">{{ category.name }}</span>
+          <span class="ml-auto flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              :aria-label="`Редактировать раздел ${category.name}`"
+              @click="router.push(`/categories/${category.id}/edit`)"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600"
+            >
+              <Pencil :size="14" />
+            </button>
+            <button
+              type="button"
+              :aria-label="`Удалить раздел ${category.name}`"
+              @click="deleteCategory(category)"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-red-500"
+            >
+              <Trash2 :size="14" />
+            </button>
+          </span>
         </h2>
 
         <div class="flex flex-wrap gap-3">
@@ -148,6 +174,14 @@ async function save() {
           </button>
         </div>
       </section>
+
+      <button
+        type="button"
+        @click="router.push('/categories/new')"
+        class="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 py-3 text-sm"
+      >
+        <Plus :size="16" /> Добавить раздел
+      </button>
     </div>
 
     <textarea

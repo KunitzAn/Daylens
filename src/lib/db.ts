@@ -119,6 +119,17 @@ const DEFAULT_CATEGORIES: DefaultCategory[] = [
   },
 ]
 
+export async function archiveCategory(categoryId: string): Promise<void> {
+  const now = new Date().toISOString()
+  await db.transaction('rw', db.categories, db.tags, async () => {
+    await db.categories.update(categoryId, { archivedAt: now, updatedAt: now })
+    const categoryTags = await db.tags.where('categoryId').equals(categoryId).toArray()
+    for (const tag of categoryTags) {
+      await db.tags.update(tag.id, { archivedAt: now, updatedAt: now })
+    }
+  })
+}
+
 export async function ensureDefaultCategoriesSeeded(): Promise<void> {
   const count = await db.categories.count()
   if (count > 0) return
