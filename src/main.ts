@@ -1,5 +1,8 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
+import { ensureDefaultSpheresSeeded } from './lib/db'
 
-createApp(App).mount('#app')
+ensureDefaultSpheresSeeded().finally(() => {
+  createApp(App).mount('#app')
+})
