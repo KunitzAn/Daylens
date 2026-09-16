@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import IconPicker from '../components/IconPicker.vue'
 import { archiveCategory, db } from '../lib/db'
+import { runSync } from '../lib/sync'
 
 const props = defineProps<{ id?: string }>()
 const router = useRouter()
@@ -84,12 +85,14 @@ async function save() {
     }
   })
 
+  void runSync()
   router.push('/')
 }
 
 async function deleteCategory() {
   if (!confirm(`Удалить раздел «${name.value}»? Все его теги тоже скроются из выбора.`)) return
   await archiveCategory(categoryId)
+  void runSync()
   router.push('/')
 }
 </script>

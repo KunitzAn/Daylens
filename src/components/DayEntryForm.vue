@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import {
   ACTIVE_MOOD_SET_KEY,
   DEFAULT_MOOD_SET_ID,
@@ -16,6 +16,8 @@ import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
 import { resolveMoodSet } from '../lib/moodSets'
 import { useLiveQuery } from '../lib/useLiveQuery'
+import { me } from '../lib/auth'
+import { lastSyncError, pendingCount, runSync, syncing } from '../lib/sync'
 
 const props = defineProps<{ date: string }>()
 const router = useRouter()
@@ -72,6 +74,7 @@ function toggleTag(id: string) {
 async function deleteCategory(category: Category) {
   if (!confirm(`Удалить раздел «${category.name}»? Все его теги тоже скроются из выбора.`)) return
   await archiveCategory(category.id)
+  void runSync()
 }
 
 const canSave = computed(() => mood.value !== null)
@@ -110,14 +113,30 @@ async function save() {
   justSavedTimeout = setTimeout(() => {
     justSaved.value = false
   }, 2000)
+
+  void runSync()
 }
 </script>
 
 <template>
   <div class="w-full max-w-md flex flex-col items-center gap-8">
-    <header class="text-center">
+    <header class="text-center flex flex-col items-center gap-1">
       <p class="text-sm text-neutral-500 capitalize">{{ formatDateHuman(props.date) }}</p>
       <h1 class="text-xl font-semibold text-neutral-800">Как прошёл день?</h1>
+
+      <RouterLink
+        v-if="!me"
+        to="/login"
+        class="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2"
+      >
+        Войти, чтобы синхронизировать между устройствами
+      </RouterLink>
+      <p v-else class="text-xs text-neutral-400">
+        <template v-if="syncing">Синхронизация…</template>
+        <template v-else-if="lastSyncError">Не удалось синхронизировать, попробую снова</template>
+        <template v-else-if="pendingCount > 0">Ждут синхронизации: {{ pendingCount }}</template>
+        <template v-else>{{ me.email }} · синхронизировано</template>
+      </p>
     </header>
 
     <div class="flex flex-col items-center gap-2">

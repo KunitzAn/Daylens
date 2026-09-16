@@ -5,6 +5,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    // `npm run dev:api` поднимает Functions отдельно (wrangler pages dev,
+    // порт 8788) — без этого прокси фронтенд на 5183 не видит /api/*.
+    proxy: {
+      '/api': 'http://localhost:8788',
+    },
+  },
   plugins: [
     vue(),
     tailwindcss(),

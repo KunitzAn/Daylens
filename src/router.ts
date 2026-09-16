@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CategoryEditView from './views/CategoryEditView.vue'
 import EntryView from './views/EntryView.vue'
+import LoginView from './views/LoginView.vue'
 import MoodSetsView from './views/MoodSetsView.vue'
 
 export const router = createRouter({
@@ -15,5 +16,7 @@ export const router = createRouter({
       props: true,
     },
     { path: '/mood-sets', name: 'mood-sets', component: MoodSetsView },
+    // не требует сессии для показа — сам логин, страница обязана быть публичной
+    { path: '/login', name: 'login', component: LoginView },
   ],
 })
