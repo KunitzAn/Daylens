@@ -5,6 +5,7 @@ import type { Category, Entry, Tag } from '../lib/db'
 import { formatDateWithWeekday, formatTime } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { moodLevel } from '../lib/mood'
+import { useMoodColors } from '../lib/moodPalettes'
 import type { MoodSet } from '../lib/moodSets'
 
 const props = defineProps<{
@@ -16,7 +17,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{ open: []; remove: [] }>()
 
+const { colorFor } = useMoodColors()
 const mood = computed(() => moodLevel(props.entry.mood))
+const moodColor = computed(() => colorFor.value(props.entry.mood))
 const moodImage = computed(() => props.moodSet.images?.[props.entry.mood - 1])
 
 const entryTags = computed(() =>
@@ -46,7 +49,7 @@ const entryTags = computed(() =>
     <header class="flex items-center gap-3 pr-8">
       <span
         class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl shrink-0"
-        :style="{ backgroundColor: moodImage ? 'transparent' : (mood?.color ?? '#a8a29e') }"
+        :style="{ backgroundColor: moodImage ? 'transparent' : moodColor }"
       >
         <img v-if="moodImage" :src="moodImage" :alt="mood?.label" class="w-full h-full object-cover" />
         <template v-else>{{ mood?.emoji }}</template>
@@ -57,7 +60,7 @@ const entryTags = computed(() =>
           {{ formatDateWithWeekday(entry.date) }}
         </p>
         <p class="flex items-baseline gap-2">
-          <span class="text-lg font-semibold" :style="{ color: mood?.color }">
+          <span class="text-lg font-semibold" :style="{ color: moodColor }">
             {{ mood?.label }}
           </span>
           <span class="text-xs text-neutral-400">{{ formatTime(entry.createdAt) }}</span>

@@ -36,14 +36,25 @@ export interface Setting {
   value: string
 }
 
+/** Своя палитра настроений: 7 цветов, индекс 0 — уровень 1. */
+export interface MoodPalette {
+  id: string
+  name: string
+  colors: string[]
+  updatedAt: string
+}
+
 export const ACTIVE_MOOD_SET_KEY = 'activeMoodSetId'
 export const DEFAULT_MOOD_SET_ID = 'emoji'
+export const ACTIVE_PALETTE_KEY = 'activeMoodPaletteId'
+export const DEFAULT_PALETTE_ID = 'classic'
 
 export const db = new Dexie('daylens') as Dexie & {
   categories: EntityTable<Category, 'id'>
   tags: EntityTable<Tag, 'id'>
   entries: EntityTable<Entry, 'id'>
   settings: EntityTable<Setting, 'key'>
+  moodPalettes: EntityTable<MoodPalette, 'id'>
 }
 
 db.version(1).stores({
@@ -53,6 +64,7 @@ db.version(1).stores({
   // *tagIds — multi-entry индекс, позволяет искать записи по отдельному тегу
   entries: 'id, &date, dirty, deletedAt, *tagIds',
   settings: 'key',
+  moodPalettes: 'id',
 })
 
 export async function getActiveMoodSetId(): Promise<string> {

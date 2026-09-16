@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ChevronRight, LogOut, Settings, Smile } from '@lucide/vue'
+import { ChevronRight, LogOut, Palette, Settings, Smile } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { logout, me } from '../lib/auth'
 
 const links = [
   { to: '/settings/categories', label: 'Разделы и действия', icon: Settings },
   { to: '/mood-sets', label: 'Наборы настроений', icon: Smile },
+  { to: '/mood-palettes', label: 'Цвета настроений', icon: Palette },
 ]
 </script>
 

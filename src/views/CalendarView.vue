@@ -16,11 +16,13 @@ import {
   WEEKDAY_LABELS,
 } from '../lib/date'
 import { moodLevel } from '../lib/mood'
+import { useMoodColors } from '../lib/moodPalettes'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const router = useRouter()
 const month = ref(currentMonth())
 const today = todayLocalDate()
+const { colorFor } = useMoodColors()
 
 const entries = useLiveQuery<Entry[]>(
   () => db.entries.filter((e) => e.deletedAt === null).toArray(),
@@ -48,9 +50,9 @@ const cells = computed<Cell[]>(() => {
   return [...blanks, ...days]
 })
 
-function colorFor(date: string): string | undefined {
+function cellColor(date: string): string | undefined {
   const mood = moodByDate.value.get(date)
-  return mood ? moodLevel(mood)?.color : undefined
+  return mood ? colorFor.value(mood) : undefined
 }
 
 function open(date: string) {
@@ -103,10 +105,10 @@ function open(date: string) {
               @click="open(cell.date)"
               class="aspect-square rounded-xl flex items-center justify-center text-sm transition-transform disabled:opacity-30"
               :class="[
-                colorFor(cell.date) ? 'text-white font-medium' : 'text-neutral-500 bg-neutral-100',
+                cellColor(cell.date) ? 'text-white font-medium' : 'text-neutral-500 bg-neutral-100',
                 cell.date === today ? 'ring-2 ring-violet-400' : '',
               ]"
-              :style="colorFor(cell.date) ? { backgroundColor: colorFor(cell.date) } : undefined"
+              :style="cellColor(cell.date) ? { backgroundColor: cellColor(cell.date) } : undefined"
             >
               {{ cell.day }}
             </button>
@@ -120,7 +122,7 @@ function open(date: string) {
           v-for="level in [1, 2, 3, 4, 5, 6, 7]"
           :key="level"
           class="w-5 h-5 rounded-md"
-          :style="{ backgroundColor: moodLevel(level)?.color }"
+          :style="{ backgroundColor: colorFor(level) }"
           :title="moodLevel(level)?.label"
         />
         <span class="text-xs text-neutral-400">Лучше</span>
