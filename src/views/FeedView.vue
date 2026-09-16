@@ -7,11 +7,14 @@ import {
   ACTIVE_MOOD_SET_KEY,
   DEFAULT_MOOD_SET_ID,
   db,
+  softDeleteEntry,
   type Category,
   type Entry,
   type Tag,
 } from '../lib/db'
+import { formatDateWithWeekday } from '../lib/date'
 import { resolveMoodSet } from '../lib/moodSets'
+import { runSync } from '../lib/sync'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const router = useRouter()
@@ -43,6 +46,14 @@ const hasMore = computed(() => entries.value.length > limit.value)
 const tagsById = computed(() => new Map(tags.value.map((t) => [t.id, t])))
 const categoriesById = computed(() => new Map(categories.value.map((c) => [c.id, c])))
 const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
+
+async function removeEntry(entry: Entry) {
+  if (!confirm(`Удалить запись за ${formatDateWithWeekday(entry.date)}? Отменить будет нельзя.`)) {
+    return
+  }
+  await softDeleteEntry(entry.id)
+  void runSync()
+}
 </script>
 
 <template>
@@ -60,20 +71,16 @@ const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
         Записей пока нет. Нажмите «+», чтобы записать сегодняшний день.
       </p>
 
-      <button
+      <EntryCard
         v-for="entry in visibleEntries"
         :key="entry.id"
-        type="button"
-        @click="router.push(`/day/${entry.date}`)"
-        class="text-left"
-      >
-        <EntryCard
-          :entry="entry"
-          :tags-by-id="tagsById"
-          :categories-by-id="categoriesById"
-          :mood-set="moodSet"
-        />
-      </button>
+        :entry="entry"
+        :tags-by-id="tagsById"
+        :categories-by-id="categoriesById"
+        :mood-set="moodSet"
+        @open="router.push(`/day/${entry.date}`)"
+        @remove="removeEntry(entry)"
+      />
 
       <button
         v-if="hasMore"

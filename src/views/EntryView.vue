@@ -16,7 +16,12 @@ const date = computed(() => {
 })
 
 function goBack() {
-  if (window.history.length > 1) router.back()
+  // Не `history.length`: начальный about:blank вкладки тоже считается записью,
+  // и «назад» уводит из приложения. vue-router держит в state.back путь
+  // предыдущего экрана *внутри* приложения — null, если зашли сюда напрямую
+  // (закладка, холодный старт PWA на этом маршруте).
+  const previous = router.options.history.state.back
+  if (typeof previous === 'string') router.back()
   else router.push('/')
 }
 </script>

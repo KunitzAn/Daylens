@@ -138,6 +138,18 @@ const DEFAULT_CATEGORIES: DefaultCategory[] = [
   },
 ]
 
+/**
+ * Удаление записи — мягкое: строка остаётся с `deletedAt`, иначе синк не
+ * сможет отличить «удалено на другом устройстве» от «ещё не доехало сюда».
+ * Строка также держит за собой дату: в Dexie на `date` висит уникальный
+ * индекс, поэтому запись за тот же день потом не создаётся заново, а
+ * оживляется (см. DayEntryForm).
+ */
+export async function softDeleteEntry(entryId: string): Promise<void> {
+  const now = new Date().toISOString()
+  await db.entries.update(entryId, { deletedAt: now, updatedAt: now, dirty: true })
+}
+
 export async function archiveCategory(categoryId: string): Promise<void> {
   const now = new Date().toISOString()
   await db.transaction('rw', db.categories, db.tags, async () => {

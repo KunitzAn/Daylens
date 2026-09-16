@@ -52,10 +52,17 @@ const note = ref('')
 
 async function loadEntry(date: string) {
   const existing = await db.entries.where('date').equals(date).first()
+
+  // Удалённая запись за этот день всё ещё занимает дату (уникальный индекс),
+  // поэтому её id мы держим, чтобы при сохранении оживить строку, а не
+  // пытаться вставить вторую за тот же день. Но поля показываем пустые —
+  // для пользователя день удалён и заполняется с нуля.
+  const isDeleted = existing?.deletedAt != null
+
   entryId.value = existing?.id ?? null
-  mood.value = existing?.mood ?? null
-  selectedTagIds.value = existing?.tagIds ?? []
-  note.value = existing?.note ?? ''
+  mood.value = isDeleted ? null : (existing?.mood ?? null)
+  selectedTagIds.value = isDeleted ? [] : (existing?.tagIds ?? [])
+  note.value = isDeleted ? '' : (existing?.note ?? '')
 }
 
 watch(() => props.date, loadEntry, { immediate: true })
@@ -113,6 +120,7 @@ async function save() {
       tagIds: [...selectedTagIds.value],
       note: note.value,
       updatedAt: now,
+      deletedAt: null, // оживляем, если день до этого удаляли
       dirty: true,
     }
     await db.entries.update(entryId.value, patch)

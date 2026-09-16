@@ -33,3 +33,46 @@ export function formatTime(isoTimestamp: string): string {
 export function isFutureDate(date: string): boolean {
   return date > todayLocalDate()
 }
+
+export interface Month {
+  year: number
+  /** 1–12, а не как в Date — чтобы не путаться при сборке строки даты. */
+  month: number
+}
+
+export function currentMonth(): Month {
+  const d = new Date()
+  return { year: d.getFullYear(), month: d.getMonth() + 1 }
+}
+
+export function addMonths({ year, month }: Month, delta: number): Month {
+  const zeroBased = month - 1 + delta
+  return {
+    year: year + Math.floor(zeroBased / 12),
+    month: ((zeroBased % 12) + 12) % 12 + 1,
+  }
+}
+
+export function formatMonthTitle({ year, month }: Month): string {
+  const title = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(
+    new Date(year, month - 1, 1),
+  )
+  // Заглавная только первая буква: CSS `capitalize` задрал бы и «г.» в «Г.»
+  return title.charAt(0).toUpperCase() + title.slice(1)
+}
+
+export function toDateString({ year, month }: Month, day: number): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+export function daysInMonth({ year, month }: Month): number {
+  return new Date(year, month, 0).getDate()
+}
+
+/** Сколько пустых клеток перед первым числом. Неделя начинается с понедельника. */
+export function leadingBlanks({ year, month }: Month): number {
+  const sunday0 = new Date(year, month - 1, 1).getDay()
+  return (sunday0 + 6) % 7
+}
+
+export const WEEKDAY_LABELS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']

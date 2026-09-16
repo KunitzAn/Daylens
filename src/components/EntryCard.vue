@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { X } from '@lucide/vue'
 import { computed } from 'vue'
 import type { Category, Entry, Tag } from '../lib/db'
 import { formatDateWithWeekday, formatTime } from '../lib/date'
@@ -13,6 +14,8 @@ const props = defineProps<{
   moodSet: MoodSet
 }>()
 
+const emit = defineEmits<{ open: []; remove: [] }>()
+
 const mood = computed(() => moodLevel(props.entry.mood))
 const moodImage = computed(() => props.moodSet.images?.[props.entry.mood - 1])
 
@@ -25,9 +28,22 @@ const entryTags = computed(() =>
 
 <template>
   <article
-    class="rounded-3xl bg-white p-4 flex flex-col gap-3 text-left w-full shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+    role="button"
+    tabindex="0"
+    @click="emit('open')"
+    @keyup.enter="emit('open')"
+    class="relative rounded-3xl bg-white p-4 flex flex-col gap-3 text-left w-full cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
   >
-    <header class="flex items-center gap-3">
+    <button
+      type="button"
+      :aria-label="`Удалить запись за ${formatDateWithWeekday(entry.date)}`"
+      @click.stop="emit('remove')"
+      class="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-neutral-300 hover:text-red-500 hover:bg-red-50"
+    >
+      <X :size="16" />
+    </button>
+
+    <header class="flex items-center gap-3 pr-8">
       <span
         class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl shrink-0"
         :style="{ backgroundColor: moodImage ? 'transparent' : (mood?.color ?? '#a8a29e') }"
