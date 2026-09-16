@@ -16,7 +16,7 @@ getActiveMoodSetId().then((id) => {
 async function select(id: string) {
   activeId.value = id
   await setActiveMoodSetId(id)
-  router.push('/')
+  router.push('/more')
 }
 </script>
 
@@ -26,7 +26,7 @@ async function select(id: string) {
       <header class="flex items-center gap-3">
         <button
           type="button"
-          @click="router.push('/')"
+          @click="router.push('/more')"
           class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-[0_4px_8px_rgba(0,0,0,0.06)] shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />

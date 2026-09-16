@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Pencil, Plus, Trash2 } from '@lucide/vue'
+import { Check, Plus, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import IconPicker from './IconPicker.vue'
 import {
   ACTIVE_MOOD_SET_KEY,
   DEFAULT_MOOD_SET_ID,
-  archiveCategory,
   db,
   type Category,
   type Entry,
@@ -15,12 +14,11 @@ import { formatDateHuman } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
 import { resolveMoodSet } from '../lib/moodSets'
+import { runSync } from '../lib/sync'
 import { useLiveQuery } from '../lib/useLiveQuery'
-import { me } from '../lib/auth'
-import { lastSyncError, pendingCount, runSync, syncing } from '../lib/sync'
 
 const props = defineProps<{ date: string }>()
-const router = useRouter()
+const emit = defineEmits<{ saved: [] }>()
 
 const activeMoodSetId = useLiveQuery<string>(
   () => db.settings.get(ACTIVE_MOOD_SET_KEY).then((row) => row?.value ?? DEFAULT_MOOD_SET_ID),
@@ -51,8 +49,6 @@ const entryId = ref<string | null>(null)
 const mood = ref<number | null>(null)
 const selectedTagIds = ref<string[]>([])
 const note = ref('')
-const justSaved = ref(false)
-let justSavedTimeout: ReturnType<typeof setTimeout> | undefined
 
 async function loadEntry(date: string) {
   const existing = await db.entries.where('date').equals(date).first()
@@ -60,7 +56,6 @@ async function loadEntry(date: string) {
   mood.value = existing?.mood ?? null
   selectedTagIds.value = existing?.tagIds ?? []
   note.value = existing?.note ?? ''
-  justSaved.value = false
 }
 
 watch(() => props.date, loadEntry, { immediate: true })
@@ -71,9 +66,38 @@ function toggleTag(id: string) {
   else selectedTagIds.value.splice(i, 1)
 }
 
-async function deleteCategory(category: Category) {
-  if (!confirm(`Удалить раздел «${category.name}»? Все его теги тоже скроются из выбора.`)) return
-  await archiveCategory(category.id)
+// Добавление действия прямо отсюда: «вспомнил в момент записи» — самый
+// частый повод завести новый тег, гонять за этим в настройки не надо.
+const addingInCategoryId = ref<string | null>(null)
+const newTagName = ref('')
+const newTagIcon = ref('Circle')
+
+function startAddingTag(categoryId: string) {
+  addingInCategoryId.value = categoryId
+  newTagName.value = ''
+  newTagIcon.value = 'Circle'
+}
+
+function cancelAddingTag() {
+  addingInCategoryId.value = null
+}
+
+async function saveNewTag(categoryId: string) {
+  const name = newTagName.value.trim()
+  if (!name) return
+  const existing = tagsByCategory.value.get(categoryId) ?? []
+  const id = crypto.randomUUID()
+  await db.tags.add({
+    id,
+    categoryId,
+    name,
+    icon: newTagIcon.value,
+    sortOrder: existing.length,
+    archivedAt: null,
+    updatedAt: new Date().toISOString(),
+  })
+  selectedTagIds.value.push(id) // раз только что завёл — почти наверняка хочет отметить
+  addingInCategoryId.value = null
   void runSync()
 }
 
@@ -108,65 +132,36 @@ async function save() {
     entryId.value = id
   }
 
-  justSaved.value = true
-  clearTimeout(justSavedTimeout)
-  justSavedTimeout = setTimeout(() => {
-    justSaved.value = false
-  }, 2000)
-
   void runSync()
+  emit('saved')
 }
 </script>
 
 <template>
-  <div class="w-full max-w-md flex flex-col items-center gap-8">
-    <header class="text-center flex flex-col items-center gap-1">
+  <div class="w-full flex flex-col items-center gap-8">
+    <header class="text-center">
       <p class="text-sm text-neutral-500 capitalize">{{ formatDateHuman(props.date) }}</p>
       <h1 class="text-xl font-semibold text-neutral-800">Как прошёл день?</h1>
-
-      <RouterLink
-        v-if="!me"
-        to="/login"
-        class="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2"
-      >
-        Войти, чтобы синхронизировать между устройствами
-      </RouterLink>
-      <p v-else class="text-xs text-neutral-400">
-        <template v-if="syncing">Синхронизация…</template>
-        <template v-else-if="lastSyncError">Не удалось синхронизировать, попробую снова</template>
-        <template v-else-if="pendingCount > 0">Ждут синхронизации: {{ pendingCount }}</template>
-        <template v-else>{{ me.email }} · синхронизировано</template>
-      </p>
     </header>
 
-    <div class="flex flex-col items-center gap-2">
-      <div class="flex flex-wrap justify-center gap-2">
-        <button
-          v-for="level in MOOD_LEVELS"
-          :key="level.value"
-          type="button"
-          :aria-label="level.label"
-          :title="level.label"
-          @click="mood = level.value"
-          class="w-12 h-12 rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
-          :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
-        >
-          <img
-            v-if="activeMoodSet.images"
-            :src="activeMoodSet.images[level.value - 1]"
-            :alt="level.label"
-            class="w-full h-full object-cover"
-          />
-          <span v-else class="text-2xl">{{ level.emoji }}</span>
-        </button>
-      </div>
-
+    <div class="flex flex-wrap justify-center gap-2">
       <button
+        v-for="level in MOOD_LEVELS"
+        :key="level.value"
         type="button"
-        @click="router.push('/mood-sets')"
-        class="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1"
+        :aria-label="level.label"
+        :title="level.label"
+        @click="mood = level.value"
+        class="w-12 h-12 rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
+        :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
       >
-        <Pencil :size="11" /> {{ activeMoodSet.name }}
+        <img
+          v-if="activeMoodSet.images"
+          :src="activeMoodSet.images[level.value - 1]"
+          :alt="level.label"
+          class="w-full h-full object-cover"
+        />
+        <span v-else class="text-2xl">{{ level.emoji }}</span>
       </button>
     </div>
 
@@ -175,24 +170,6 @@ async function save() {
         <h2 class="text-sm font-medium flex items-center gap-2" :style="{ color: category.color }">
           <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: category.color }" />
           <span class="truncate">{{ category.name }}</span>
-          <span class="ml-auto flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              :aria-label="`Редактировать раздел ${category.name}`"
-              @click="router.push(`/categories/${category.id}/edit`)"
-              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600"
-            >
-              <Pencil :size="14" />
-            </button>
-            <button
-              type="button"
-              :aria-label="`Удалить раздел ${category.name}`"
-              @click="deleteCategory(category)"
-              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-red-500"
-            >
-              <Trash2 :size="14" />
-            </button>
-          </span>
         </h2>
 
         <div class="flex flex-wrap gap-3">
@@ -222,16 +199,53 @@ async function save() {
             </span>
             <span class="text-xs text-neutral-600 text-center leading-tight">{{ tag.name }}</span>
           </button>
+
+          <button
+            v-if="addingInCategoryId !== category.id"
+            type="button"
+            :aria-label="`Добавить действие в раздел ${category.name}`"
+            @click="startAddingTag(category.id)"
+            class="flex flex-col items-center gap-1 w-16"
+          >
+            <span
+              class="w-14 h-14 rounded-full flex items-center justify-center border-2 border-dashed text-neutral-400"
+              :style="{ borderColor: category.color, color: category.color }"
+            >
+              <Plus :size="22" />
+            </span>
+            <span class="text-xs text-neutral-400 text-center leading-tight">Добавить</span>
+          </button>
+        </div>
+
+        <div v-if="addingInCategoryId === category.id" class="flex items-center gap-2">
+          <IconPicker v-model="newTagIcon" :color="category.color" />
+          <input
+            v-model="newTagName"
+            type="text"
+            placeholder="Название действия"
+            @keyup.enter="saveNewTag(category.id)"
+            class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-violet-300"
+          />
+          <button
+            type="button"
+            aria-label="Сохранить действие"
+            :disabled="!newTagName.trim()"
+            @click="saveNewTag(category.id)"
+            class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 disabled:opacity-40"
+            :style="{ backgroundColor: category.color }"
+          >
+            <Check :size="18" />
+          </button>
+          <button
+            type="button"
+            aria-label="Отменить"
+            @click="cancelAddingTag"
+            class="w-10 h-10 rounded-full flex items-center justify-center text-neutral-400 shrink-0"
+          >
+            <X :size="18" />
+          </button>
         </div>
       </section>
-
-      <button
-        type="button"
-        @click="router.push('/categories/new')"
-        class="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 py-3 text-sm"
-      >
-        <Plus :size="16" /> Добавить раздел
-      </button>
     </div>
 
     <textarea
@@ -249,7 +263,5 @@ async function save() {
     >
       {{ entryId ? 'Сохранить изменения' : 'Записать' }}
     </button>
-
-    <p v-if="justSaved" class="text-sm text-green-600">Сохранено</p>
   </div>
 </template>

@@ -86,14 +86,14 @@ async function save() {
   })
 
   void runSync()
-  router.push('/')
+  router.push('/settings/categories')
 }
 
 async function deleteCategory() {
   if (!confirm(`Удалить раздел «${name.value}»? Все его теги тоже скроются из выбора.`)) return
   await archiveCategory(categoryId)
   void runSync()
-  router.push('/')
+  router.push('/settings/categories')
 }
 </script>
 
@@ -103,7 +103,7 @@ async function deleteCategory() {
       <header class="flex items-center gap-3">
         <button
           type="button"
-          @click="router.push('/')"
+          @click="router.push('/settings/categories')"
           class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-[0_4px_8px_rgba(0,0,0,0.06)] shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />

@@ -235,6 +235,7 @@ export const ICONS: Record<string, Component> = {
   Carrot,
   Cat,
   Cigarette,
+  Circle,
   Clapperboard,
   Clock,
   Cloud,
