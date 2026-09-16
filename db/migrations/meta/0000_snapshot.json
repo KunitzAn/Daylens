@@ -1,5 +1,5 @@
 {
-  "id": "4978c632-f0b0-4711-a892-33e0cf2edac8",
+  "id": "3a5ee2af-3c9e-4b20-9c1b-3284bc21ae6b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -258,8 +258,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.magic_link_requests": {
-      "name": "magic_link_requests",
+    "public.login_code_requests": {
+      "name": "login_code_requests",
       "schema": "",
       "columns": {
         "id": {
@@ -296,8 +296,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.magic_link_tokens": {
-      "name": "magic_link_tokens",
+    "public.login_codes": {
+      "name": "login_codes",
       "schema": "",
       "columns": {
         "id": {
@@ -312,8 +312,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "token_hash": {
-          "name": "token_hash",
+        "code_hash": {
+          "name": "code_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -330,6 +330,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -339,11 +346,11 @@
         }
       },
       "indexes": {
-        "magic_link_tokens_hash_uidx": {
-          "name": "magic_link_tokens_hash_uidx",
+        "login_codes_hash_uidx": {
+          "name": "login_codes_hash_uidx",
           "columns": [
             {
-              "expression": "token_hash",
+              "expression": "code_hash",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -356,9 +363,9 @@
         }
       },
       "foreignKeys": {
-        "magic_link_tokens_user_id_users_id_fk": {
-          "name": "magic_link_tokens_user_id_users_id_fk",
-          "tableFrom": "magic_link_tokens",
+        "login_codes_user_id_users_id_fk": {
+          "name": "login_codes_user_id_users_id_fk",
+          "tableFrom": "login_codes",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -372,11 +379,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "magic_link_tokens_token_hash_unique": {
-          "name": "magic_link_tokens_token_hash_unique",
+        "login_codes_code_hash_unique": {
+          "name": "login_codes_code_hash_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "token_hash"
+            "code_hash"
           ]
         }
       },

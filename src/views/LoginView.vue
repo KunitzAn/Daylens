@@ -1,40 +1,55 @@
 <script setup lang="ts">
 import { ArrowLeft } from '@lucide/vue'
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { requestLoginLink } from '../lib/auth'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ApiError } from '../lib/api'
+import { requestLoginCode, verifyLoginCode } from '../lib/auth'
+import { runSync } from '../lib/sync'
 
 const router = useRouter()
-const route = useRoute()
 
 const email = ref('')
-const sent = ref(false)
+const code = ref('')
+const step = ref<'email' | 'code'>('email')
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 
-const ERROR_MESSAGES: Record<string, string> = {
-  expired_link: 'Ссылка устарела или уже использована — запросите новую.',
-  missing_token: 'Ссылка повреждена — запросите новую.',
-  user_not_found: 'Что-то пошло не так — запросите новую ссылку.',
-}
-
-const queryError = computed(() => {
-  const err = route.query.error
-  return typeof err === 'string' ? (ERROR_MESSAGES[err] ?? 'Не получилось войти, попробуйте ещё раз.') : null
-})
-
-async function submit() {
+async function submitEmail() {
   if (!email.value.trim()) return
   loading.value = true
   errorMessage.value = null
   try {
-    await requestLoginLink(email.value.trim())
-    sent.value = true
+    await requestLoginCode(email.value.trim())
+    step.value = 'code'
   } catch {
     errorMessage.value = 'Не получилось отправить письмо. Попробуйте ещё раз чуть позже.'
   } finally {
     loading.value = false
   }
+}
+
+async function submitCode() {
+  if (!code.value.trim()) return
+  loading.value = true
+  errorMessage.value = null
+  try {
+    await verifyLoginCode(email.value.trim(), code.value.trim())
+    void runSync()
+    router.push('/')
+  } catch (err) {
+    errorMessage.value =
+      err instanceof ApiError && err.status === 400
+        ? 'Неверный или устаревший код. Проверьте письмо или запросите новый.'
+        : 'Не получилось войти. Попробуйте ещё раз.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function resend() {
+  step.value = 'email'
+  code.value = ''
+  errorMessage.value = null
 }
 </script>
 
@@ -52,11 +67,9 @@ async function submit() {
         <h1 class="text-lg font-semibold text-neutral-800">Вход</h1>
       </header>
 
-      <p v-if="queryError" class="text-sm text-red-500 bg-red-50 rounded-2xl p-3">{{ queryError }}</p>
-
-      <template v-if="!sent">
+      <template v-if="step === 'email'">
         <p class="text-sm text-neutral-500">
-          Без пароля — пришлём ссылку на почту, по ней и войдёте. Пригодится, если открываете
+          Без пароля — пришлём код на почту, введёте его здесь. Пригодится, если открываете
           Daylens на новом устройстве.
         </p>
         <input
@@ -64,25 +77,47 @@ async function submit() {
           type="email"
           placeholder="you@example.com"
           autocomplete="email"
-          @keyup.enter="submit"
+          @keyup.enter="submitEmail"
           class="rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-violet-300"
         />
         <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
         <button
           type="button"
           :disabled="!email.trim() || loading"
-          @click="submit"
+          @click="submitEmail"
           class="w-full rounded-2xl py-3 text-white font-medium bg-violet-400 shadow-[0_6px_12px_rgba(0,0,0,0.1)] disabled:opacity-40"
         >
-          {{ loading ? 'Отправляю…' : 'Прислать ссылку' }}
+          {{ loading ? 'Отправляю…' : 'Прислать код' }}
         </button>
       </template>
 
       <template v-else>
         <p class="text-sm text-neutral-600 bg-white rounded-2xl p-4 shadow-[0_4px_8px_rgba(0,0,0,0.06)]">
-          Проверьте почту <strong>{{ email }}</strong> — ссылка действует 15 минут. Можно закрыть эту
-          вкладку, приложение продолжает работать локально.
+          Отправили код на <strong>{{ email }}</strong> — введите его ниже, действует 15 минут.
         </p>
+        <input
+          v-model="code"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="6"
+          placeholder="000000"
+          autocomplete="one-time-code"
+          @keyup.enter="submitCode"
+          class="rounded-2xl bg-white p-3 text-2xl text-center tracking-[0.3em] text-neutral-700 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
+        <button
+          type="button"
+          :disabled="!code.trim() || loading"
+          @click="submitCode"
+          class="w-full rounded-2xl py-3 text-white font-medium bg-violet-400 shadow-[0_6px_12px_rgba(0,0,0,0.1)] disabled:opacity-40"
+        >
+          {{ loading ? 'Проверяю…' : 'Войти' }}
+        </button>
+        <button type="button" @click="resend" class="text-sm text-neutral-400 hover:text-neutral-600">
+          Отправить код ещё раз
+        </button>
       </template>
     </div>
   </main>

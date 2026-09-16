@@ -2,5 +2,5 @@
 DATABASE_URL="postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/dbname?sslmode=require"
 SESSION_SECRET="openssl rand -hex 32"
 RESEND_API_KEY="re_..."
-MAGIC_LINK_FROM="Daylens <onboarding@resend.dev>"
+LOGIN_EMAIL_FROM="Daylens <onboarding@resend.dev>"
 APP_URL="http://localhost:8788"

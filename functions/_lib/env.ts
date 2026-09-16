@@ -4,8 +4,8 @@ export interface Env {
   /** Секрет подписи session-куки. */
   SESSION_SECRET: string
   RESEND_API_KEY: string
-  /** "Name <email>" — отправитель magic link писем. */
-  MAGIC_LINK_FROM: string
-  /** Базовый URL фронтенда — на него ссылается magic link. */
+  /** "Name <email>" — отправитель писем с кодом входа. */
+  LOGIN_EMAIL_FROM: string
+  /** Базовый URL фронтенда — для проверки Origin и (в перспективе) писем. */
   APP_URL: string
 }

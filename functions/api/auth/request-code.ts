@@ -1,10 +1,10 @@
 import { and, eq, gte, sql } from 'drizzle-orm'
-import { magicLinkRequests, magicLinkTokens, users } from '../../../db/schema'
+import { loginCodeRequests, loginCodes, users } from '../../../db/schema'
 import { getDb } from '../../_lib/db'
 import type { Env } from '../../_lib/env'
-import { sendMagicLinkEmail } from '../../_lib/email'
+import { sendLoginCodeEmail } from '../../_lib/email'
 import { clientIp, error, json, readJson, sameOrigin } from '../../_lib/http'
-import { generateToken, hashToken, MAGIC_LINK_TTL_SECONDS } from '../../_lib/magicToken'
+import { generateCode, hashCode, LOGIN_CODE_TTL_SECONDS } from '../../_lib/loginCode'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -28,19 +28,22 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const [emailCount, ipCount] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)::int` })
-      .from(magicLinkRequests)
-      .where(and(eq(magicLinkRequests.email, email), gte(magicLinkRequests.createdAt, windowStart))),
+      .from(loginCodeRequests)
+      .where(and(eq(loginCodeRequests.email, email), gte(loginCodeRequests.createdAt, windowStart))),
     db
       .select({ count: sql<number>`count(*)::int` })
-      .from(magicLinkRequests)
-      .where(and(eq(magicLinkRequests.ip, ip), gte(magicLinkRequests.createdAt, windowStart))),
+      .from(loginCodeRequests)
+      .where(and(eq(loginCodeRequests.ip, ip), gte(loginCodeRequests.createdAt, windowStart))),
   ])
 
-  if ((emailCount[0]?.count ?? 0) >= MAX_PER_EMAIL_PER_WINDOW || (ipCount[0]?.count ?? 0) >= MAX_PER_IP_PER_WINDOW) {
+  if (
+    (emailCount[0]?.count ?? 0) >= MAX_PER_EMAIL_PER_WINDOW ||
+    (ipCount[0]?.count ?? 0) >= MAX_PER_IP_PER_WINDOW
+  ) {
     return error(429, 'rate_limited')
   }
 
-  await db.insert(magicLinkRequests).values({ email, ip })
+  await db.insert(loginCodeRequests).values({ email, ip })
 
   let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
   if (!user) {
@@ -48,20 +51,18 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   }
   if (!user) return error(500, 'user_upsert_failed')
 
-  const token = generateToken()
-  const tokenHash = await hashToken(token)
-  await db.insert(magicLinkTokens).values({
+  const code = generateCode()
+  const codeHash = await hashCode(code)
+  await db.insert(loginCodes).values({
     userId: user.id,
-    tokenHash,
-    expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_SECONDS * 1000),
+    codeHash,
+    expiresAt: new Date(Date.now() + LOGIN_CODE_TTL_SECONDS * 1000),
   })
 
-  const link = `${ctx.env.APP_URL}/api/auth/verify?token=${token}`
-
   try {
-    await sendMagicLinkEmail(ctx.env, email, link)
+    await sendLoginCodeEmail(ctx.env, email, code)
   } catch (err) {
-    console.error('sendMagicLinkEmail failed', err)
+    console.error('sendLoginCodeEmail failed', err)
     return error(502, 'email_send_failed')
   }
 

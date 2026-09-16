@@ -1,6 +1,6 @@
 import type { Env } from './env'
 
-export async function sendMagicLinkEmail(env: Env, to: string, link: string): Promise<void> {
+export async function sendLoginCodeEmail(env: Env, to: string, code: string): Promise<void> {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -8,12 +8,15 @@ export async function sendMagicLinkEmail(env: Env, to: string, link: string): Pr
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: env.MAGIC_LINK_FROM,
+      from: env.LOGIN_EMAIL_FROM,
       to: [to],
-      subject: 'Вход в Daylens',
+      subject: `${code} — код входа в Daylens`,
+      // Намеренно без ссылок: почтовые сервисы оборачивают ссылки в
+      // click-tracking редиректы (см. README), которые иногда рвутся сами
+      // по себе. Код вводится руками — ломать нечему.
       html: `
-        <p>Ссылка для входа в Daylens (действует 15 минут):</p>
-        <p><a href="${link}">${link}</a></p>
+        <p>Код для входа в Daylens (действует 15 минут):</p>
+        <p style="font-size: 32px; font-weight: 700; letter-spacing: 4px;">${code}</p>
         <p>Если вы не запрашивали вход — просто проигнорируйте это письмо.</p>
       `,
     }),

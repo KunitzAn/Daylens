@@ -25,21 +25,22 @@ CREATE TABLE "entry_tags" (
 	CONSTRAINT "entry_tags_entry_id_tag_id_pk" PRIMARY KEY("entry_id","tag_id")
 );
 --> statement-breakpoint
-CREATE TABLE "magic_link_requests" (
+CREATE TABLE "login_code_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"ip" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "magic_link_tokens" (
+CREATE TABLE "login_codes" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
-	"token_hash" text NOT NULL,
+	"code_hash" text NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"used_at" timestamp with time zone,
+	"attempts" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "magic_link_tokens_token_hash_unique" UNIQUE("token_hash")
+	CONSTRAINT "login_codes_code_hash_unique" UNIQUE("code_hash")
 );
 --> statement-breakpoint
 CREATE TABLE "tags" (
@@ -70,11 +71,11 @@ ALTER TABLE "categories" ADD CONSTRAINT "categories_user_id_users_id_fk" FOREIGN
 ALTER TABLE "entries" ADD CONSTRAINT "entries_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "entry_tags" ADD CONSTRAINT "entry_tags_entry_id_entries_id_fk" FOREIGN KEY ("entry_id") REFERENCES "public"."entries"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "entry_tags" ADD CONSTRAINT "entry_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "magic_link_tokens" ADD CONSTRAINT "magic_link_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "login_codes" ADD CONSTRAINT "login_codes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tags" ADD CONSTRAINT "tags_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tags" ADD CONSTRAINT "tags_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_settings" ADD CONSTRAINT "user_settings_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "categories_user_idx" ON "categories" USING btree ("user_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "entries_user_date_uidx" ON "entries" USING btree ("user_id","date") WHERE "entries"."deleted_at" is null;--> statement-breakpoint
-CREATE UNIQUE INDEX "magic_link_tokens_hash_uidx" ON "magic_link_tokens" USING btree ("token_hash");--> statement-breakpoint
+CREATE UNIQUE INDEX "login_codes_hash_uidx" ON "login_codes" USING btree ("code_hash");--> statement-breakpoint
 CREATE UNIQUE INDEX "tags_user_idx" ON "tags" USING btree ("user_id","id");

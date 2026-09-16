@@ -22,8 +22,13 @@ export async function checkSession(): Promise<Me | null> {
   return me.value
 }
 
-export async function requestLoginLink(email: string): Promise<void> {
-  await api.post('/api/auth/request-link', { email })
+export async function requestLoginCode(email: string): Promise<void> {
+  await api.post('/api/auth/request-code', { email })
+}
+
+export async function verifyLoginCode(email: string, code: string): Promise<void> {
+  me.value = await api.post<Me>('/api/auth/verify-code', { email, code })
+  authChecked.value = true
 }
 
 export async function logout(): Promise<void> {

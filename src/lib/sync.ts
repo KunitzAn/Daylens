@@ -30,8 +30,20 @@ async function setLastSyncedAt(value: string): Promise<void> {
   await db.settings.put({ key: LAST_SYNCED_AT_KEY, value })
 }
 
-async function mergePulled(res: SyncResponse): Promise<void> {
+async function mergePulled(res: SyncResponse, isFirstSyncOnDevice: boolean): Promise<void> {
   await db.transaction('rw', db.categories, db.tags, db.entries, async () => {
+    if (isFirstSyncOnDevice && (res.categories.length > 0 || res.tags.length > 0)) {
+      // Первый синк на этом устройстве: локальные разделы/теги — это ещё
+      // не тронутые дефолты (сид срабатывает до входа, до того как
+      // известно, есть ли аккаунт — main.ts просто не может это знать
+      // заранее). У сервера уже есть настоящий набор пользователя —
+      // берём его целиком вместо мёржа по id, иначе дефолты и серверные
+      // раздвоятся (ровно то, что случилось при первом тесте этого флоу).
+      // Записи (entries) сюда не входят — это не дефолты, а реальные
+      // данные, если пользователь успел что-то занести офлайн до входа.
+      await db.categories.clear()
+      await db.tags.clear()
+    }
     for (const c of res.categories) {
       const local = await db.categories.get(c.id)
       if (!local || new Date(local.updatedAt) < new Date(c.updatedAt)) {
@@ -73,7 +85,7 @@ export async function runSync(): Promise<void> {
 
     const since = await getLastSyncedAt()
     const pulled = await api.get<SyncResponse>(`/api/sync${since ? `?since=${encodeURIComponent(since)}` : ''}`)
-    await mergePulled(pulled)
+    await mergePulled(pulled, since === null)
 
     const dirtyEntries = (await db.entries.toArray()).filter((e) => e.dirty)
     const allCategories = await db.categories.toArray()
@@ -104,13 +116,18 @@ export async function runSync(): Promise<void> {
 
 let triggersInstalled = false
 
-/** Триггеры ретрая: старт, online, visibilitychange — см. README. */
+/**
+ * Триггеры ретрая: online, visibilitychange — см. README. Начальный синк
+ * сюда не входит: его нужно дождаться *до* сидинга дефолтных разделов
+ * (см. main.ts) — иначе на новом устройстве локальный сид гонится с
+ * пуллом чужих (точнее, уже существующих на сервере) разделов и даёт
+ * дубли.
+ */
 export function installSyncTriggers(): void {
   if (triggersInstalled) return
   triggersInstalled = true
 
-  void runSync()
-  updatePendingCount()
+  void updatePendingCount()
 
   window.addEventListener('online', () => void runSync())
   document.addEventListener('visibilitychange', () => {
