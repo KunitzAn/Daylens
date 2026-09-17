@@ -12,10 +12,15 @@ import { lastSyncError, pendingCount, syncing } from '../lib/sync'
   >
     Войти для синхронизации
   </RouterLink>
-  <p v-else class="text-xs text-neutral-400 text-right shrink-0">
-    <template v-if="syncing">Синхронизация…</template>
-    <template v-else-if="lastSyncError">Синк не удался, попробую снова</template>
-    <template v-else-if="pendingCount > 0">Ждут отправки: {{ pendingCount }}</template>
-    <template v-else>Синхронизировано</template>
-  </p>
+  <div v-else class="text-right shrink-0 min-w-0 max-w-[55%]">
+    <p class="text-xs text-neutral-400">
+      <template v-if="syncing">Синхронизация…</template>
+      <template v-else-if="lastSyncError">Синк не удался, попробую снова</template>
+      <template v-else-if="pendingCount > 0">Ждут отправки: {{ pendingCount }}</template>
+      <template v-else>Синхронизировано</template>
+    </p>
+    <!-- Чей это аккаунт — часть статуса, а не отдельная настройка: «Синхронизировано»
+         на двух устройствах с разными данными невозможно понять, не зная почты. -->
+    <p class="text-[10px] text-neutral-300 truncate">{{ me.email }}</p>
+  </div>
 </template>

@@ -1,9 +1,10 @@
 import { ref } from 'vue'
 import { checkSession, me } from './auth'
-import { db, type Category, type Entry, type Tag } from './db'
+import { db, ensureDefaultCategoriesSeeded, type Category, type Entry, type Tag } from './db'
 import { api } from './api'
 
 const LAST_SYNCED_AT_KEY = 'lastSyncedAt'
+const SYNCED_USER_ID_KEY = 'syncedUserId'
 
 export const syncing = ref(false)
 export const lastSyncError = ref<string | null>(null)
@@ -28,6 +29,26 @@ async function getLastSyncedAt(): Promise<string | null> {
 
 async function setLastSyncedAt(value: string): Promise<void> {
   await db.settings.put({ key: LAST_SYNCED_AT_KEY, value })
+}
+
+async function getSyncedUserId(): Promise<number | null> {
+  const row = await db.settings.get(SYNCED_USER_ID_KEY)
+  return row ? Number(row.value) : null
+}
+
+/**
+ * На устройстве сменился аккаунт. Дневник прежнего владельца стираем:
+ * держать его локально — это и чужие записи в чьей-то ленте, и сломанный
+ * курсор (`since` от прошлого аккаунта заставляет сервер отдавать только
+ * то, что новее чужой синхронизации, то есть почти ничего).
+ */
+async function resetLocalDiary(): Promise<void> {
+  await db.transaction('rw', db.categories, db.tags, db.entries, db.settings, async () => {
+    await db.categories.clear()
+    await db.tags.clear()
+    await db.entries.clear()
+    await db.settings.delete(LAST_SYNCED_AT_KEY)
+  })
 }
 
 async function mergePulled(res: SyncResponse, isFirstSyncOnDevice: boolean): Promise<void> {
@@ -83,9 +104,18 @@ export async function runSync(): Promise<void> {
     const session = me.value ?? (await checkSession())
     if (!session) return // не вошли — синк просто не выполняется, это ок
 
+    const previousUserId = await getSyncedUserId()
+    const switchedAccount = previousUserId !== null && previousUserId !== session.userId
+    if (switchedAccount) await resetLocalDiary()
+
     const since = await getLastSyncedAt()
     const pulled = await api.get<SyncResponse>(`/api/sync${since ? `?since=${encodeURIComponent(since)}` : ''}`)
     await mergePulled(pulled, since === null)
+
+    // После смены аккаунта разделов может не быть вообще (новый пользователь),
+    // а сид из main.ts отрабатывает только на старте приложения. Сеем здесь,
+    // до пуша, чтобы дефолты сразу уехали на сервер.
+    if (switchedAccount) await ensureDefaultCategoriesSeeded()
 
     const dirtyEntries = (await db.entries.toArray()).filter((e) => e.dirty)
     const allCategories = await db.categories.toArray()
@@ -106,6 +136,7 @@ export async function runSync(): Promise<void> {
     }
 
     await setLastSyncedAt(pulled.serverTime)
+    await db.settings.put({ key: SYNCED_USER_ID_KEY, value: String(session.userId) })
   } catch (err) {
     lastSyncError.value = err instanceof Error ? err.message : 'sync_failed'
   } finally {
