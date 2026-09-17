@@ -23,6 +23,11 @@ export function formatDateWithWeekday(date: string): string {
   }).format(parseLocalDate(date))
 }
 
+/** Заглавная только первая буква: CSS `capitalize` задрал бы и «сент.» в «Сент.». */
+export function capitalizeFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 /** Время записи — из createdAt, не из даты дня. */
 export function formatTime(isoTimestamp: string): string {
   return new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(
@@ -76,3 +81,22 @@ export function leadingBlanks({ year, month }: Month): number {
 }
 
 export const WEEKDAY_LABELS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+
+/** Последние n дней включая сегодня, по возрастанию. */
+export function lastNDays(n: number): string[] {
+  const out: string[] = []
+  const d = new Date()
+  d.setHours(12, 0, 0, 0) // полдень: переход на летнее время не сдвинет дату
+  d.setDate(d.getDate() - (n - 1))
+  for (let i = 0; i < n; i++) {
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    d.setDate(d.getDate() + 1)
+  }
+  return out
+}
+
+/** «16.09» — подпись под столбиком графика. */
+export function formatDayShort(date: string): string {
+  const [, month, day] = date.split('-')
+  return `${day}.${month}`
+}

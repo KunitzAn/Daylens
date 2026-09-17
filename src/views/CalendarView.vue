@@ -16,7 +16,7 @@ import {
   WEEKDAY_LABELS,
 } from '../lib/date'
 import { moodLevel } from '../lib/mood'
-import { useMoodColors } from '../lib/moodPalettes'
+import { readableTextOn, useMoodColors } from '../lib/moodPalettes'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const router = useRouter()
@@ -105,10 +105,17 @@ function open(date: string) {
               @click="open(cell.date)"
               class="aspect-square rounded-xl flex items-center justify-center text-sm transition-transform disabled:opacity-30"
               :class="[
-                cellColor(cell.date) ? 'text-white font-medium' : 'text-neutral-500 bg-neutral-100',
+                cellColor(cell.date) ? 'font-medium' : 'text-neutral-500 bg-neutral-100',
                 cell.date === today ? 'ring-2 ring-violet-400' : '',
               ]"
-              :style="cellColor(cell.date) ? { backgroundColor: cellColor(cell.date) } : undefined"
+              :style="
+                cellColor(cell.date)
+                  ? {
+                      backgroundColor: cellColor(cell.date),
+                      color: readableTextOn(cellColor(cell.date)!),
+                    }
+                  : undefined
+              "
             >
               {{ cell.day }}
             </button>
