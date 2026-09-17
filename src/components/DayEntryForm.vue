@@ -148,11 +148,16 @@ async function save() {
 <template>
   <div class="w-full flex flex-col items-center gap-8">
     <header class="text-center">
-      <p class="text-sm text-neutral-500 capitalize">{{ formatDateHuman(props.date) }}</p>
+      <!-- Без CSS `capitalize`: он поднимает регистр у каждого слова и делает
+           из «17 сентября» — «17 Сентября». -->
+      <p class="text-sm text-neutral-500">{{ formatDateHuman(props.date) }}</p>
       <h1 class="text-xl font-semibold text-neutral-800">Как прошёл день?</h1>
     </header>
 
-    <div class="flex flex-wrap justify-center gap-2">
+    <!-- Сетка на 7 колонок, а не flex-wrap: шкала настроения — это одна
+         последовательность, и на узком экране седьмой уровень не должен
+         уезжать в отдельную строку. -->
+    <div class="w-full grid grid-cols-7 gap-1.5">
       <button
         v-for="level in MOOD_LEVELS"
         :key="level.value"
@@ -160,7 +165,7 @@ async function save() {
         :aria-label="level.label"
         :title="level.label"
         @click="mood = level.value"
-        class="w-12 h-12 rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
+        class="w-full aspect-square flex items-center justify-center rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
         :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
       >
         <img
@@ -169,7 +174,7 @@ async function save() {
           :alt="level.label"
           class="w-full h-full object-cover"
         />
-        <span v-else class="text-2xl">{{ level.emoji }}</span>
+        <span v-else class="text-xl leading-none">{{ level.emoji }}</span>
       </button>
     </div>
 
@@ -180,17 +185,20 @@ async function save() {
           <span class="truncate">{{ category.name }}</span>
         </h2>
 
-        <div class="flex flex-wrap gap-3">
+        <!-- Сетка, а не flex-wrap: у плитки фиксированная ширина колонки, и
+             подпись переносится внутри неё. На flex-wrap длинное слово вроде
+             «Многозадачность» распирало плитку и наезжало на соседнюю. -->
+        <div class="grid grid-cols-4 gap-x-2 gap-y-3">
           <button
             v-for="tag in tagsByCategory.get(category.id) ?? []"
             :key="tag.id"
             type="button"
             :title="tag.name"
             @click="toggleTag(tag.id)"
-            class="flex flex-col items-center gap-1 w-16"
+            class="flex flex-col items-center gap-1 min-w-0"
           >
             <span
-              class="w-14 h-14 rounded-full flex items-center justify-center border-2 transition-transform"
+              class="w-14 h-14 shrink-0 rounded-full flex items-center justify-center border-2 transition-transform"
               :class="selectedTagIds.includes(tag.id) ? 'scale-105' : ''"
               :style="
                 selectedTagIds.includes(tag.id)
@@ -205,7 +213,13 @@ async function save() {
                 :style="{ color: selectedTagIds.includes(tag.id) ? 'white' : category.color }"
               />
             </span>
-            <span class="text-xs text-neutral-600 text-center leading-tight">{{ tag.name }}</span>
+            <!-- hyphens-auto, чтобы «Продуктивный» переносилось по слогам,
+                 а не рвалось как «Продуктивны/й». Работает от lang документа. -->
+            <span
+              class="w-full text-xs text-neutral-600 text-center leading-tight break-words hyphens-auto"
+            >
+              {{ tag.name }}
+            </span>
           </button>
 
           <button
@@ -213,15 +227,17 @@ async function save() {
             type="button"
             :aria-label="`Добавить действие в раздел ${category.name}`"
             @click="startAddingTag(category.id)"
-            class="flex flex-col items-center gap-1 w-16"
+            class="flex flex-col items-center gap-1 min-w-0"
           >
             <span
-              class="w-14 h-14 rounded-full flex items-center justify-center border-2 border-dashed text-neutral-400"
+              class="w-14 h-14 shrink-0 rounded-full flex items-center justify-center border-2 border-dashed text-neutral-400"
               :style="{ borderColor: category.color, color: category.color }"
             >
               <Plus :size="22" />
             </span>
-            <span class="text-xs text-neutral-400 text-center leading-tight">Добавить</span>
+            <span class="w-full text-xs text-neutral-400 text-center leading-tight break-words">
+              Добавить
+            </span>
           </button>
         </div>
 

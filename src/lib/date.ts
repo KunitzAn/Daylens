@@ -1,6 +1,17 @@
-export function todayLocalDate(): string {
-  const d = new Date()
+/** `Date` → «2026-09-17» в локальной зоне (toISOString дал бы UTC и мог сдвинуть день). */
+function toLocalDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function todayLocalDate(): string {
+  return toLocalDateString(new Date())
+}
+
+/** Дата со сдвигом на days дней. */
+export function shiftDate(date: string, days: number): string {
+  const d = parseLocalDate(date)
+  d.setDate(d.getDate() + days)
+  return toLocalDateString(d)
 }
 
 function parseLocalDate(date: string): Date {
@@ -89,7 +100,7 @@ export function lastNDays(n: number): string[] {
   d.setHours(12, 0, 0, 0) // полдень: переход на летнее время не сдвинет дату
   d.setDate(d.getDate() - (n - 1))
   for (let i = 0; i < n; i++) {
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    out.push(toLocalDateString(d))
     d.setDate(d.getDate() + 1)
   }
   return out
