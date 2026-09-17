@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { ArrowLeft, Copy, Pencil, Plus, Trash2 } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import { ACTIVE_PALETTE_KEY, db, DEFAULT_PALETTE_ID, type MoodPalette } from '../lib/db'
 import { MOOD_LEVELS } from '../lib/mood'
@@ -16,6 +16,10 @@ const customPalettes = useLiveQuery<MoodPalette[]>(() => db.moodPalettes.toArray
 
 async function select(id: string) {
   await setActivePaletteId(id)
+}
+
+function duplicate(id: string) {
+  router.push({ path: '/mood-palettes/new', query: { from: id } })
 }
 
 async function remove(palette: MoodPalette) {
@@ -43,20 +47,37 @@ async function remove(palette: MoodPalette) {
 
       <section class="flex flex-col gap-3">
         <p class="text-sm font-medium text-neutral-500">Системные</p>
-        <button
+        <div
           v-for="palette in SYSTEM_PALETTES"
           :key="palette.id"
-          type="button"
-          @click="select(palette.id)"
-          class="w-full rounded-2xl bg-white p-4 flex flex-col gap-3 text-left transition-shadow"
+          class="rounded-2xl bg-white p-4 flex flex-col gap-3 transition-shadow"
           :class="
             activeId === palette.id
               ? 'shadow-[0_0_0_2px_#a78bfa]'
               : 'shadow-[0_4px_8px_rgba(0,0,0,0.06)]'
           "
         >
-          <span class="text-sm font-medium text-neutral-700">{{ palette.name }}</span>
-          <span class="flex gap-2">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="select(palette.id)"
+              class="flex-1 text-left text-sm font-medium text-neutral-700 truncate"
+            >
+              {{ palette.name }}
+            </button>
+            <!-- Системную палитру не редактируют: она константа в коде.
+                 Копия — и есть способ «взять эту и подправить». -->
+            <button
+              type="button"
+              :aria-label="`Скопировать палитру ${palette.name}`"
+              @click="duplicate(palette.id)"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600"
+            >
+              <Copy :size="14" />
+            </button>
+          </div>
+
+          <button type="button" @click="select(palette.id)" class="flex gap-2">
             <span
               v-for="(color, i) in palette.colors"
               :key="i"
@@ -64,8 +85,8 @@ async function remove(palette: MoodPalette) {
               :style="{ backgroundColor: color }"
               :title="MOOD_LEVELS[i]?.label"
             />
-          </span>
-        </button>
+          </button>
+        </div>
       </section>
 
       <section class="flex flex-col gap-3">
@@ -84,6 +105,14 @@ async function remove(palette: MoodPalette) {
           <div class="flex items-center gap-2">
             <button type="button" @click="select(palette.id)" class="flex-1 text-left text-sm font-medium text-neutral-700 truncate">
               {{ palette.name }}
+            </button>
+            <button
+              type="button"
+              :aria-label="`Скопировать палитру ${palette.name}`"
+              @click="duplicate(palette.id)"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600"
+            >
+              <Copy :size="14" />
             </button>
             <button
               type="button"

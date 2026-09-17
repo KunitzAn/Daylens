@@ -1,77 +1,60 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { capitalizeFirst, formatDateWithWeekday, formatDayShort } from '../lib/date'
-import { moodLevel } from '../lib/mood'
+import { computed } from 'vue'
+import type { ChartBar } from '../lib/periods'
 
 const props = defineProps<{
-  /** Даты периода по возрастанию — включая дни без записи. */
-  dates: string[]
-  moodByDate: Map<string, number>
-  colorFor: (level: number) => string
+  bars: ChartBar[]
+  selectedKey: string | null
 }>()
+const emit = defineEmits<{ select: [key: string | null] }>()
 
 const MAX_LEVEL = 7
-const selected = ref<string | null>(null)
 
-const bars = computed(() =>
-  props.dates.map((date) => {
-    const mood = props.moodByDate.get(date)
-    return {
-      date,
-      mood,
-      // Пустой день — это пустой день, а не ноль: столбика просто нет,
-      // соединять соседние дни линией через пропуск было бы враньём.
-      heightPercent: mood ? (mood / MAX_LEVEL) * 100 : 0,
-      color: mood ? props.colorFor(mood) : undefined,
-    }
-  }),
-)
+// Подписи не под каждым столбиком: на 14 днях они слипаются в кашу.
+const labelEvery = computed(() => (props.bars.length > 8 ? Math.ceil(props.bars.length / 6) : 1))
 
-const selectedBar = computed(() => bars.value.find((b) => b.date === selected.value))
-
-// Подписи не под каждым столбиком: на 30 днях они слипнутся в кашу.
-const labelEvery = computed(() => (props.dates.length > 10 ? Math.ceil(props.dates.length / 6) : 1))
+function heightPercent(value: number | null): number {
+  return value === null ? 0 : (value / MAX_LEVEL) * 100
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="h-5 text-xs text-neutral-500">
-      <template v-if="selectedBar">
-        <span>{{ capitalizeFirst(formatDateWithWeekday(selectedBar.date)) }}</span>
-        —
-        <span v-if="selectedBar.mood" :style="{ color: selectedBar.color }" class="font-medium">
-          {{ moodLevel(selectedBar.mood)?.label }}
-        </span>
-        <span v-else>записи нет</span>
-      </template>
-    </p>
-
-    <div class="flex items-end gap-[2px] h-32">
+    <div class="flex items-end gap-[3px] h-32 border-b border-neutral-100">
       <button
         v-for="bar in bars"
-        :key="bar.date"
+        :key="bar.key"
         type="button"
-        :aria-label="`${bar.date}: ${bar.mood ? moodLevel(bar.mood)?.label : 'записи нет'}`"
-        @click="selected = selected === bar.date ? null : bar.date"
-        class="flex-1 h-full flex items-end min-w-0"
+        :aria-label="`${bar.title}: ${bar.value === null ? 'записей нет' : bar.value.toFixed(1)}`"
+        :aria-pressed="selectedKey === bar.key"
+        @click="emit('select', selectedKey === bar.key ? null : bar.key)"
+        class="flex-1 h-full min-w-0 flex items-end rounded-t-md transition-colors"
+        :class="selectedKey === bar.key ? 'bg-neutral-100' : 'hover:bg-neutral-50'"
       >
+        <!-- Контур обязателен: середина дивергирующей палитры — почти белая
+             (так и задумано, «ни хорошо ни плохо»), и без обводки нейтральный
+             день на белой карточке выглядел бы как отсутствие данных.
+             Пустой период не рисует ничего — только пустая колонка. -->
         <span
-          v-if="bar.mood"
-          class="w-full rounded-t transition-opacity"
-          :style="{ height: `${bar.heightPercent}%`, backgroundColor: bar.color }"
-          :class="selected && selected !== bar.date ? 'opacity-40' : ''"
+          v-if="bar.value !== null"
+          class="w-full rounded-t-md transition-opacity ring-1 ring-inset ring-black/[0.07]"
+          :style="{ height: `${heightPercent(bar.value)}%`, backgroundColor: bar.color }"
+          :class="selectedKey && selectedKey !== bar.key ? 'opacity-45' : ''"
         />
-        <span v-else class="w-full h-[2px] rounded bg-neutral-200" />
       </button>
     </div>
 
-    <div class="flex gap-[2px]">
+    <div class="flex gap-[3px]">
+      <!-- Без truncate: колонка уже подписи («04.09» в 24px не влезает), но
+           подписи стоят через labelEvery, так что текст свободно вылезает
+           в соседние пустые колонки и ни с чем не сталкивается. -->
       <span
         v-for="(bar, i) in bars"
-        :key="bar.date"
-        class="flex-1 min-w-0 text-[10px] text-neutral-400 text-center truncate"
+        :key="bar.key"
+        class="flex-1 min-w-0 text-[10px] text-center whitespace-nowrap"
+        :class="selectedKey === bar.key ? 'text-neutral-600 font-medium' : 'text-neutral-400'"
       >
-        {{ i % labelEvery === 0 ? formatDayShort(bar.date) : '' }}
+        {{ selectedKey === bar.key || i % labelEvery === 0 ? bar.label : '' }}
       </span>
     </div>
   </div>

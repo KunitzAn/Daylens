@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ArrowLeft } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { db, DEFAULT_PALETTE_ID } from '../lib/db'
 import { MOOD_LEVELS } from '../lib/mood'
-import { DEFAULT_MOOD_COLORS, setActivePaletteId } from '../lib/moodPalettes'
+import { DEFAULT_MOOD_COLORS, setActivePaletteId, SYSTEM_PALETTES } from '../lib/moodPalettes'
 
 const props = defineProps<{ id?: string }>()
 const router = useRouter()
+const route = useRoute()
 
 const isNew = computed(() => !props.id)
 const paletteId = props.id ?? crypto.randomUUID()
@@ -18,11 +19,24 @@ const name = ref('')
 const colors = ref<string[]>([...DEFAULT_MOOD_COLORS])
 
 async function load(id: string | undefined) {
-  if (!id) return
-  const palette = await db.moodPalettes.get(id)
-  if (!palette) return
-  name.value = palette.name
-  colors.value = [...palette.colors]
+  if (id) {
+    const palette = await db.moodPalettes.get(id)
+    if (!palette) return
+    name.value = palette.name
+    colors.value = [...palette.colors]
+    return
+  }
+
+  // ?from=<id> — копия существующей палитры. Для системных это единственный
+  // способ их «изменить»: сами они константы в коде и правке не подлежат.
+  // Пока не нажали «Сохранить», ничего не создаётся — отменённая копия
+  // не оставляет мусора в списке.
+  const from = route.query.from
+  if (typeof from !== 'string') return
+  const source = SYSTEM_PALETTES.find((p) => p.id === from) ?? (await db.moodPalettes.get(from))
+  if (!source) return
+  name.value = `${source.name} — копия`
+  colors.value = [...source.colors]
 }
 
 watch(() => props.id, load, { immediate: true })
@@ -62,7 +76,7 @@ async function remove() {
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
         <h1 class="text-lg font-semibold text-neutral-800">
-          {{ isNew ? 'Новая палитра' : 'Палитра' }}
+          {{ isNew ? (route.query.from ? 'Копия палитры' : 'Новая палитра') : 'Палитра' }}
         </h1>
       </header>
 
