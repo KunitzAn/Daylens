@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ICON_NAMES, resolveIcon } from '../lib/icons'
+import { ICON_GROUPS, resolveIcon } from '../lib/icons'
 
 defineProps<{ modelValue: string; color?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -8,10 +8,15 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const open = ref(false)
 const query = ref('')
 
-const filteredNames = computed(() => {
+// Ищем и по английскому имени иконки, и по русской подписи группы:
+// совпало название группы — показываем её целиком.
+const filteredGroups = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return ICON_NAMES
-  return ICON_NAMES.filter((name) => name.toLowerCase().includes(q))
+  return ICON_GROUPS.map((group) => {
+    const names = Object.keys(group.icons)
+    if (!q || group.label.toLowerCase().includes(q)) return { label: group.label, names }
+    return { label: group.label, names: names.filter((n) => n.toLowerCase().includes(q)) }
+  }).filter((group) => group.names.length > 0)
 })
 
 watch(open, (isOpen) => {
@@ -43,24 +48,29 @@ function pick(name: string) {
         <input
           v-model="query"
           type="text"
-          placeholder="Поиск (на английском, напр. coffee)"
+          placeholder="Поиск: спорт, еда, coffee…"
           autofocus
           class="rounded-xl bg-neutral-100 px-3 py-2 text-sm text-neutral-700 outline-none focus:ring-2 focus:ring-violet-300"
         />
 
-        <div class="max-h-56 overflow-y-auto grid grid-cols-6 gap-2">
-          <button
-            v-for="name in filteredNames"
-            :key="name"
-            type="button"
-            :title="name"
-            @click="pick(name)"
-            class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-neutral-100"
-            :class="name === modelValue ? 'bg-neutral-100' : ''"
-          >
-            <component :is="resolveIcon(name)" :size="18" :style="{ color: color ?? '#525252' }" />
-          </button>
-          <p v-if="filteredNames.length === 0" class="col-span-6 text-center text-xs text-neutral-400 py-4">
+        <div class="max-h-64 overflow-y-auto flex flex-col gap-2">
+          <section v-for="group in filteredGroups" :key="group.label" class="flex flex-col gap-1">
+            <h3 class="text-[11px] text-neutral-400 sticky top-0 bg-white py-1">{{ group.label }}</h3>
+            <div class="grid grid-cols-6 gap-2">
+              <button
+                v-for="name in group.names"
+                :key="name"
+                type="button"
+                :title="name"
+                @click="pick(name)"
+                class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-neutral-100"
+                :class="name === modelValue ? 'bg-neutral-100' : ''"
+              >
+                <component :is="resolveIcon(name)" :size="18" :style="{ color: color ?? '#525252' }" />
+              </button>
+            </div>
+          </section>
+          <p v-if="filteredGroups.length === 0" class="text-center text-xs text-neutral-400 py-4">
             Ничего не найдено
           </p>
         </div>
