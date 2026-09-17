@@ -78,6 +78,18 @@ async function mergePulled(res: SyncResponse, isFirstSyncOnDevice: boolean): Pro
       }
     }
     for (const e of res.entries) {
+      // Один день — одна запись: `date` в Dexie уникален. Если день уже занят
+      // строкой с другим id (дневник прежнего аккаунта; день, заведённый
+      // офлайн до входа), то put() упал бы на индексе и оборвал транзакцию
+      // целиком — устройство перестало бы синхронизироваться вообще, молча.
+      // Разводим по тому же last-write-wins, но так, чтобы на дату всегда
+      // оставалась ровно одна строка.
+      const occupant = await db.entries.where('date').equals(e.date).first()
+      if (occupant && occupant.id !== e.id) {
+        if (new Date(occupant.updatedAt) >= new Date(e.updatedAt)) continue
+        await db.entries.delete(occupant.id)
+      }
+
       const local = await db.entries.get(e.id)
       if (!local || new Date(local.updatedAt) < new Date(e.updatedAt)) {
         await db.entries.put({ ...e, dirty: false })
@@ -107,6 +119,16 @@ export async function runSync(): Promise<void> {
     const previousUserId = await getSyncedUserId()
     const switchedAccount = previousUserId !== null && previousUserId !== session.userId
     if (switchedAccount) await resetLocalDiary()
+
+    // Курсор есть, а владельца мы не записывали — устройство синхронизировалось
+    // версией до появления syncedUserId. Чей это дневник, проверить нечем, а
+    // курсор мог остаться от другого аккаунта и прятать всё чужое как «не
+    // новее». Сбрасываем только курсор: pull с нуля заменит разделы и теги
+    // серверными (см. mergePulled), а локальные записи не трогаем — среди них
+    // могут быть неотправленные, и терять их ради разовой миграции нельзя.
+    if (!switchedAccount && previousUserId === null && (await getLastSyncedAt()) !== null) {
+      await db.settings.delete(LAST_SYNCED_AT_KEY)
+    }
 
     const since = await getLastSyncedAt()
     const pulled = await api.get<SyncResponse>(`/api/sync${since ? `?since=${encodeURIComponent(since)}` : ''}`)

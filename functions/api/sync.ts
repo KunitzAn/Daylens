@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull } from 'drizzle-orm'
 import { categories, entries, entryTags, tags } from '../../db/schema'
 import type { AuthedData } from '../_lib/context'
 import { getDb, type Db } from '../_lib/db'
@@ -226,6 +226,27 @@ async function upsertEntry(db: Db, userId: number, e: WireEntry): Promise<boolea
       })
       .where(eq(entries.id, e.id))
   } else {
+    // День уже может быть занят строкой с другим id — тот же день, заведённый
+    // на двух устройствах независимо. На (user_id, date) висит частичный
+    // уникальный индекс, и голый insert свалил бы весь POST в 500. Разводим
+    // тем же last-write-wins: проигравшую строку гасим мягко, чтобы удаление
+    // доехало до устройства, которое её создало, и дубль там тоже исчез.
+    if (!e.deletedAt) {
+      const [occupant] = await db
+        .select()
+        .from(entries)
+        .where(and(eq(entries.userId, userId), eq(entries.date, e.date), isNull(entries.deletedAt)))
+        .limit(1)
+
+      if (occupant) {
+        if (occupant.updatedAt >= updatedAt) return false
+        await db
+          .update(entries)
+          .set({ deletedAt: updatedAt, updatedAt })
+          .where(eq(entries.id, occupant.id))
+      }
+    }
+
     await db.insert(entries).values({
       id: e.id,
       userId,
