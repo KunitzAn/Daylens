@@ -75,19 +75,30 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Амбиентный «меш»: два больших мягких пятна на фоне вьюпорта. Чистый градиент,
-   без картинок и JS, ничего не перерисовывает при прокрутке. Цвет ведёт за
-   выбранным акцентом, поэтому смена цвета приложения меняет и воздух вокруг. */
+/* Фон приложения: градиентный «меш», целиком в цвете акцента из настроек —
+   меняешь цвет приложения, меняется и воздух вокруг него. Оба пятна из
+   --accent (не независимый второй цвет), поэтому фон никогда не спорит с
+   выбором пользователя. Второе пятно — аналоговый оттенок через
+   oklch(from …, h+34): даёт живой переход, а не плоскую заливку одним
+   тоном; без относительных цветов (@supports) откатывается на тот же
+   --accent, просто оба пятна совпадают по оттенку.
+   Чистый CSS-градиент, без картинок и JS — при прокрутке ничего не
+   перерисовывается. */
 body::before {
   content: "";
   position: fixed;
   inset: -20vmax;
   z-index: -2;
   pointer-events: none;
+  --mesh-2: var(--accent);
   background:
-    radial-gradient(40vmax 36vmax at 12% -2%, color-mix(in oklab, var(--accent) 20%, transparent), transparent 70%),
-    radial-gradient(34vmax 30vmax at 94% 80%, color-mix(in oklab, #fb923c 15%, transparent), transparent 70%);
-  opacity: .5;
+    radial-gradient(46vmax 40vmax at 14% -4%, color-mix(in oklab, var(--accent) 38%, transparent), transparent 68%),
+    radial-gradient(38vmax 34vmax at 96% 86%, color-mix(in oklab, var(--mesh-2) 30%, transparent), transparent 70%);
+}
+@supports (color: oklch(from red l c h)) {
+  body::before {
+    --mesh-2: oklch(from var(--accent) l c calc(h + 34));
+  }
 }
 
 /* --------------------------------------------------------------------------

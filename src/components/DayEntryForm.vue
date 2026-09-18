@@ -8,13 +8,14 @@ import {
   db,
   type Category,
   type Entry,
+  type MoodEmojiSet,
   type Tag,
 } from '../lib/db'
 import { formatDateHuman } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
 import { useMoodColors } from '../lib/moodPalettes'
-import { resolveMoodSet } from '../lib/moodSets'
+import { moodSetEmoji, resolveMoodSet } from '../lib/moodSets'
 import { runSync } from '../lib/sync'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
@@ -25,7 +26,8 @@ const activeMoodSetId = useLiveQuery<string>(
   () => db.settings.get(ACTIVE_MOOD_SET_KEY).then((row) => row?.value ?? DEFAULT_MOOD_SET_ID),
   DEFAULT_MOOD_SET_ID,
 )
-const activeMoodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
+const customMoodSets = useLiveQuery<MoodEmojiSet[]>(() => db.moodEmojiSets.toArray(), [])
+const activeMoodSet = computed(() => resolveMoodSet(activeMoodSetId.value, customMoodSets.value))
 const { colorFor } = useMoodColors()
 
 const categories = useLiveQuery<Category[]>(
@@ -86,6 +88,91 @@ function toggleTag(id: string) {
   const i = selectedTagIds.value.indexOf(id)
   if (i === -1) selectedTagIds.value.push(id)
   else selectedTagIds.value.splice(i, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Долгое нажатие на тег — редактировать, а не только отметить. Собрано на
+// pointerdown/up/move: сработает и на пальце, и на мыши в браузере. Порог
+// движения отменяет распознавание — иначе случайный свайп ленты триггерил бы
+// редактирование. suppressClick гасит клик-тоггл, который иначе полетел бы
+// следом за отпусканием пальца после долгого нажатия.
+const LONG_PRESS_MS = 480
+const MOVE_CANCEL_PX = 10
+let pressTimer: ReturnType<typeof setTimeout> | null = null
+let pressStart = { x: 0, y: 0 }
+let suppressClick = false
+const pressingTagId = ref<string | null>(null)
+
+function clearPress() {
+  if (pressTimer) clearTimeout(pressTimer)
+  pressTimer = null
+  pressingTagId.value = null
+}
+
+function onTagPointerDown(tag: Tag, event: PointerEvent) {
+  pressStart = { x: event.clientX, y: event.clientY }
+  suppressClick = false
+  pressingTagId.value = tag.id
+  pressTimer = setTimeout(() => {
+    suppressClick = true
+    pressingTagId.value = null
+    openEditTag(tag)
+  }, LONG_PRESS_MS)
+}
+
+function onTagPointerMove(event: PointerEvent) {
+  if (!pressTimer) return
+  const dx = event.clientX - pressStart.x
+  const dy = event.clientY - pressStart.y
+  if (Math.hypot(dx, dy) > MOVE_CANCEL_PX) clearPress()
+}
+
+function onTagClick(tag: Tag) {
+  clearPress()
+  if (suppressClick) {
+    suppressClick = false
+    return
+  }
+  toggleTag(tag.id)
+}
+
+const editingTag = ref<Tag | null>(null)
+const editTagName = ref('')
+const editTagIcon = ref('Circle')
+const editingTagColor = computed(
+  () => categories.value.find((c) => c.id === editingTag.value?.categoryId)?.color ?? '#78716c',
+)
+
+function openEditTag(tag: Tag) {
+  editingTag.value = tag
+  editTagName.value = tag.name
+  editTagIcon.value = tag.icon
+}
+
+function closeEditTag() {
+  editingTag.value = null
+}
+
+async function saveEditedTag() {
+  const tag = editingTag.value
+  const name = editTagName.value.trim()
+  if (!tag || !name) return
+  await db.tags.update(tag.id, { name, icon: editTagIcon.value, updatedAt: new Date().toISOString() })
+  closeEditTag()
+  void runSync()
+}
+
+async function archiveEditedTag() {
+  const tag = editingTag.value
+  if (!tag) return
+  if (!confirm(`Скрыть действие «${tag.name}»? Уже сохранённые записи его не потеряют.`)) return
+  const now = new Date().toISOString()
+  await db.tags.update(tag.id, { archivedAt: now, updatedAt: now })
+  // Если тег отмечен в этой ещё не сохранённой записи — снимаем отметку,
+  // иначе запись ссылалась бы на тег, скрытый из выбора.
+  selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tag.id)
+  closeEditTag()
+  void runSync()
 }
 
 // Добавление действия прямо отсюда: «вспомнил в момент записи» — самый
@@ -206,7 +293,7 @@ async function save() {
           :alt="level.label"
           class="w-full h-full object-cover"
         />
-        <span v-else class="text-xl leading-none">{{ level.emoji }}</span>
+        <span v-else class="text-xl leading-none">{{ moodSetEmoji(activeMoodSet, level.value) }}</span>
       </button>
     </div>
 
@@ -225,23 +312,32 @@ async function save() {
             v-for="tag in tagsByCategory.get(category.id) ?? []"
             :key="tag.id"
             type="button"
-            :title="tag.name"
-            @click="toggleTag(tag.id)"
-            class="flex flex-col items-center gap-1 min-w-0"
+            :title="`${tag.name} · долгое нажатие — изменить`"
+            @pointerdown="onTagPointerDown(tag, $event)"
+            @pointermove="onTagPointerMove"
+            @pointerup="clearPress"
+            @pointercancel="clearPress"
+            @pointerleave="clearPress"
+            @click="onTagClick(tag)"
+            @contextmenu.prevent
+            class="flex flex-col items-center gap-1 min-w-0 select-none"
           >
             <!-- Выбранный тег вдавливается внутрь: для переключателя
-                 «было / не было» это точнее, чем просто заливка. -->
+                 «было / не было» это точнее, чем просто заливка. Во время
+                 долгого нажатия слегка приседает — обратная связь, что
+                 палец распознан, а не просто игнорируется. -->
             <span
               class="tone w-14 h-14 shrink-0 rounded-full flex items-center justify-center transition-all duration-150"
               :style="{
                 '--c': category.color,
                 backgroundColor: selectedTagIds.includes(tag.id) ? category.color : '#ffffff',
               }"
-              :class="
+              :class="[
                 selectedTagIds.includes(tag.id)
                   ? 'shadow-clay-in'
-                  : 'shadow-clay-2 hover:-translate-y-0.5'
-              "
+                  : 'shadow-clay-2 hover:-translate-y-0.5',
+                pressingTagId === tag.id ? 'scale-90' : '',
+              ]"
             >
               <component
                 :is="resolveIcon(tag.icon)"
@@ -324,5 +420,49 @@ async function save() {
     >
       {{ entryId ? 'Сохранить изменения' : 'Записать' }}
     </button>
+
+    <!-- Лист редактирования тега — вызывается долгим нажатием на его плитку.
+         Тот же смысл, что и редактор в «Больше» → «Разделы», но без ухода с
+         экрана записи: правишь тег в моменте, не теряя, что уже заполнил. -->
+    <Teleport to="body">
+      <div v-if="editingTag" class="fixed inset-0 z-50 flex items-end justify-center">
+        <div class="absolute inset-0 bg-black/30" @click="closeEditTag" />
+        <div
+          class="relative w-full max-w-md rounded-t-card bg-[#faf9f7] px-5 pt-5 pb-8 flex flex-col gap-4 shadow-clay-3"
+        >
+          <h2 class="text-base font-bold text-neutral-800">Действие</h2>
+
+          <div class="flex items-center gap-2">
+            <IconPicker v-model="editTagIcon" :color="editingTagColor" />
+            <input
+              v-model="editTagName"
+              type="text"
+              placeholder="Название действия"
+              @keyup.enter="saveEditedTag"
+              class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          <button
+            type="button"
+            :disabled="!editTagName.trim()"
+            @click="saveEditedTag"
+            class="btn-primary w-full rounded-2xl py-3 text-white font-bold disabled:opacity-40"
+          >
+            Сохранить
+          </button>
+          <button
+            type="button"
+            @click="archiveEditedTag"
+            class="w-full rounded-2xl py-3 text-red-500 font-medium bg-white shadow-clay-1"
+          >
+            Скрыть действие
+          </button>
+          <button type="button" @click="closeEditTag" class="w-full rounded-2xl py-2 text-sm text-neutral-500">
+            Отмена
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

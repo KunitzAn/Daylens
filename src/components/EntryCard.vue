@@ -6,7 +6,7 @@ import { formatDateWithWeekday, formatTime } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { moodLevel } from '../lib/mood'
 import { useMoodColors } from '../lib/moodPalettes'
-import type { MoodSet } from '../lib/moodSets'
+import { moodSetEmoji, type MoodSet } from '../lib/moodSets'
 
 const props = defineProps<{
   entry: Entry
@@ -21,6 +21,7 @@ const { colorFor } = useMoodColors()
 const mood = computed(() => moodLevel(props.entry.mood))
 const moodColor = computed(() => colorFor.value(props.entry.mood))
 const moodImage = computed(() => props.moodSet.images?.[props.entry.mood - 1])
+const moodEmoji = computed(() => moodSetEmoji(props.moodSet, props.entry.mood))
 
 const entryTags = computed(() =>
   props.entry.tagIds
@@ -49,11 +50,11 @@ const entryTags = computed(() =>
 
     <header class="flex items-center gap-3 pr-8">
       <span
-        class="halo w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl shrink-0"
+        class="halo w-12 h-12 rounded-tile overflow-hidden flex items-center justify-center text-2xl shrink-0"
         :style="{ backgroundColor: moodImage ? '#ffffff' : moodColor }"
       >
         <img v-if="moodImage" :src="moodImage" :alt="mood?.label" class="w-full h-full object-cover" />
-        <template v-else>{{ mood?.emoji }}</template>
+        <template v-else>{{ moodEmoji }}</template>
       </span>
 
       <div class="min-w-0">

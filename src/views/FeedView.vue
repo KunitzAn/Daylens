@@ -12,6 +12,7 @@ import {
   softDeleteEntry,
   type Category,
   type Entry,
+  type MoodEmojiSet,
   type Tag,
 } from '../lib/db'
 import { formatDateWithWeekday } from '../lib/date'
@@ -39,6 +40,7 @@ const activeMoodSetId = useLiveQuery<string>(
   () => db.settings.get(ACTIVE_MOOD_SET_KEY).then((row) => row?.value ?? DEFAULT_MOOD_SET_ID),
   DEFAULT_MOOD_SET_ID,
 )
+const customMoodSets = useLiveQuery<MoodEmojiSet[]>(() => db.moodEmojiSets.toArray(), [])
 
 // Читаем из IndexedDB всё (записей даже за годы — тысячи мелких объектов,
 // это миллисекунды), а ограничиваем то, что рендерим: тормозит именно
@@ -48,7 +50,7 @@ const hasMore = computed(() => entries.value.length > limit.value)
 
 const tagsById = computed(() => new Map(tags.value.map((t) => [t.id, t])))
 const categoriesById = computed(() => new Map(categories.value.map((c) => [c.id, c])))
-const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
+const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value, customMoodSets.value))
 
 async function removeEntry(entry: Entry) {
   if (!confirm(`Удалить запись за ${formatDateWithWeekday(entry.date)}? Отменить будет нельзя.`)) {

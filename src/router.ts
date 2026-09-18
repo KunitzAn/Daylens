@@ -8,6 +8,7 @@ import FeedView from './views/FeedView.vue'
 import LoginView from './views/LoginView.vue'
 import MoodPaletteEditView from './views/MoodPaletteEditView.vue'
 import MoodPalettesView from './views/MoodPalettesView.vue'
+import MoodSetEditView from './views/MoodSetEditView.vue'
 import MoodSetsView from './views/MoodSetsView.vue'
 import MoreView from './views/MoreView.vue'
 import StatsView from './views/StatsView.vue'
@@ -38,6 +39,8 @@ export const router = createRouter({
       props: true,
     },
     { path: '/mood-sets', name: 'mood-sets', component: MoodSetsView },
+    { path: '/mood-sets/new', name: 'mood-set-new', component: MoodSetEditView },
+    { path: '/mood-sets/:id/edit', name: 'mood-set-edit', component: MoodSetEditView, props: true },
     { path: '/accent', name: 'accent', component: AccentView },
     { path: '/mood-palettes', name: 'mood-palettes', component: MoodPalettesView },
     { path: '/mood-palettes/new', name: 'mood-palette-new', component: MoodPaletteEditView },

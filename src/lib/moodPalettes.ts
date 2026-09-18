@@ -46,6 +46,19 @@ export const SYSTEM_PALETTES: SystemPalette[] = [
     name: 'Яркая',
     colors: ['#be185d', '#ec4899', '#f9a8d4', '#d6d3d1', '#7dd3fc', '#0ea5e9', '#0369a1'],
   },
+  {
+    // Цвета набора настроений «Телепузики» (см. moodSets.ts): фиолетовый,
+    // жёлтый, красный, зелёный — но не просто взяты, а разведены по
+    // семи различимым оттенкам под то же диверигрующее правило.
+    id: 'teletubbies',
+    name: 'Телепузики',
+    colors: ['#5b21b6', '#a855f7', '#fb7185', '#fef3c7', '#86efac', '#16a34a', '#14532d'],
+  },
+  {
+    id: 'neon',
+    name: 'Неоновая радуга',
+    colors: ['#ef233c', '#ff8a00', '#ffea00', '#f5f3ff', '#aaff00', '#00d4ff', '#ff2fb0'],
+  },
 ]
 
 export const DEFAULT_MOOD_COLORS = SYSTEM_PALETTES[0]!.colors

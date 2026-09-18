@@ -9,12 +9,13 @@ import {
   db,
   type Category,
   type Entry,
+  type MoodEmojiSet,
   type Tag,
 } from '../lib/db'
 import { resolveIcon } from '../lib/icons'
 import { moodLevel } from '../lib/mood'
 import { useMoodColors } from '../lib/moodPalettes'
-import { resolveMoodSet } from '../lib/moodSets'
+import { moodSetEmoji, resolveMoodSet } from '../lib/moodSets'
 import {
   buildBuckets,
   BUCKET_COUNT,
@@ -40,7 +41,8 @@ const activeMoodSetId = useLiveQuery<string>(
   () => db.settings.get(ACTIVE_MOOD_SET_KEY).then((row) => row?.value ?? DEFAULT_MOOD_SET_ID),
   DEFAULT_MOOD_SET_ID,
 )
-const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
+const customMoodSets = useLiveQuery<MoodEmojiSet[]>(() => db.moodEmojiSets.toArray(), [])
+const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value, customMoodSets.value))
 
 // Смена масштаба обнуляет выбор: ключи периодов разных масштабов несовместимы.
 watch(granularity, () => {
@@ -174,7 +176,7 @@ const visibleTags = computed(() =>
                 :alt="moodLevel(focusLevel)?.label"
                 class="w-full h-full object-cover"
               />
-              <span v-else class="text-2xl leading-none">{{ moodLevel(focusLevel)?.emoji }}</span>
+              <span v-else class="text-2xl leading-none">{{ moodSetEmoji(moodSet, focusLevel) }}</span>
             </span>
             <p class="text-xs text-neutral-500">{{ moodLevel(focusLevel)?.label }}</p>
           </template>

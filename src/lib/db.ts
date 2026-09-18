@@ -44,6 +44,14 @@ export interface MoodPalette {
   updatedAt: string
 }
 
+/** Свой набор настроений из эмодзи: 7 штук, индекс 0 — уровень 1. */
+export interface MoodEmojiSet {
+  id: string
+  name: string
+  emojis: string[]
+  updatedAt: string
+}
+
 export const ACTIVE_MOOD_SET_KEY = 'activeMoodSetId'
 export const DEFAULT_MOOD_SET_ID = 'emoji'
 export const ACTIVE_PALETTE_KEY = 'activeMoodPaletteId'
@@ -57,6 +65,7 @@ export const db = new Dexie('daylens') as Dexie & {
   entries: EntityTable<Entry, 'id'>
   settings: EntityTable<Setting, 'key'>
   moodPalettes: EntityTable<MoodPalette, 'id'>
+  moodEmojiSets: EntityTable<MoodEmojiSet, 'id'>
 }
 
 db.version(1).stores({
@@ -67,6 +76,18 @@ db.version(1).stores({
   entries: 'id, &date, dirty, deletedAt, *tagIds',
   settings: 'key',
   moodPalettes: 'id',
+})
+
+// v2: свои наборы настроений из эмодзи. Dexie требует перечислять в новой
+// версии ВСЕ таблицы (не только добавленные) — иначе те, что пропущены,
+// у уже установленных пользователей будут удалены при апгрейде.
+db.version(2).stores({
+  categories: 'id, sortOrder, archivedAt',
+  tags: 'id, categoryId, sortOrder, archivedAt',
+  entries: 'id, &date, dirty, deletedAt, *tagIds',
+  settings: 'key',
+  moodPalettes: 'id',
+  moodEmojiSets: 'id',
 })
 
 export async function getActiveMoodSetId(): Promise<string> {
