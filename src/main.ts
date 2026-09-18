@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
+import { applyAccent, getActiveAccentId } from './lib/accents'
 import { checkSession, me } from './lib/auth'
 import { ensureDefaultCategoriesSeeded } from './lib/db'
 import { router } from './router'
@@ -18,6 +19,8 @@ async function bootstrap() {
     await runSync().catch(() => {})
   }
   await ensureDefaultCategoriesSeeded()
+  // Цвет приложения — до монтирования, иначе первый кадр мигнёт дефолтным.
+  applyAccent(await getActiveAccentId())
 
   createApp(App).use(router).mount('#app')
   installSyncTriggers()

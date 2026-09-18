@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import AccentView from './views/AccentView.vue'
 import CalendarView from './views/CalendarView.vue'
 import CategoriesSettingsView from './views/CategoriesSettingsView.vue'
 import CategoryEditView from './views/CategoryEditView.vue'
@@ -37,6 +38,7 @@ export const router = createRouter({
       props: true,
     },
     { path: '/mood-sets', name: 'mood-sets', component: MoodSetsView },
+    { path: '/accent', name: 'accent', component: AccentView },
     { path: '/mood-palettes', name: 'mood-palettes', component: MoodPalettesView },
     { path: '/mood-palettes/new', name: 'mood-palette-new', component: MoodPaletteEditView },
     {

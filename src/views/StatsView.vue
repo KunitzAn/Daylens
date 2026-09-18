@@ -126,21 +126,21 @@ const visibleTags = computed(() =>
 </script>
 
 <template>
-  <main class="min-h-dvh bg-[#faf9f7] px-4 pt-6 pb-28 flex justify-center">
+  <main class="min-h-dvh px-4 pt-6 pb-28 flex justify-center">
     <div class="w-full max-w-md flex flex-col gap-4">
       <header class="flex items-start justify-between gap-3">
         <h1 class="text-xl font-semibold text-neutral-800">Статистика</h1>
         <SyncStatus />
       </header>
 
-      <div class="flex gap-1 rounded-2xl bg-white p-1 shadow-[0_4px_8px_rgba(0,0,0,0.06)]">
+      <div class="flex gap-1 rounded-2xl bg-white p-1 shadow-clay-1">
         <button
           v-for="option in GRANULARITIES"
           :key="option.value"
           type="button"
           @click="granularity = option.value"
           class="flex-1 rounded-xl py-2 text-sm transition-colors"
-          :class="granularity === option.value ? 'bg-violet-400 text-white' : 'text-neutral-500'"
+          :class="granularity === option.value ? 'bg-accent-ink text-white' : 'text-neutral-500'"
         >
           {{ option.label }}
         </button>
@@ -153,14 +153,14 @@ const visibleTags = computed(() =>
           type="button"
           aria-label="Показать весь диапазон"
           @click="selectedKey = null"
-          class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-neutral-400 shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.06)]"
+          class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
         >
           <X :size="13" />
         </button>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
-        <div class="rounded-3xl bg-white p-4 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+        <div class="rounded-card bg-white p-4 flex flex-col gap-2 shadow-clay-1">
           <p class="text-xs text-neutral-400">Среднее настроение</p>
           <p v-if="focusLevel === null" class="text-lg text-neutral-300">—</p>
           <template v-else>
@@ -180,7 +180,7 @@ const visibleTags = computed(() =>
           </template>
         </div>
 
-        <div class="rounded-3xl bg-white p-4 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+        <div class="rounded-card bg-white p-4 flex flex-col gap-2 shadow-clay-1">
           <p class="text-xs text-neutral-400">Заполнено дней</p>
           <p class="text-2xl font-semibold text-neutral-700">
             {{ focusStats.filled }}<span class="text-base text-neutral-400">/{{ focusStats.total }}</span>
@@ -188,7 +188,7 @@ const visibleTags = computed(() =>
         </div>
       </div>
 
-      <section class="rounded-3xl bg-white p-4 flex flex-col gap-3 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">
           {{ GRANULARITIES.find((g) => g.value === granularity)?.chartTitle }}
         </h2>
@@ -196,7 +196,7 @@ const visibleTags = computed(() =>
         <p class="text-[11px] text-neutral-400">Нажмите на столбик, чтобы посмотреть период.</p>
       </section>
 
-      <section class="rounded-3xl bg-white p-4 flex flex-col gap-3 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Действия за период</h2>
 
         <p v-if="tagCounts.length === 0" class="text-sm text-neutral-400">
@@ -229,7 +229,7 @@ const visibleTags = computed(() =>
           v-if="tagCounts.length > TOP_TAGS"
           type="button"
           @click="showAllTags = !showAllTags"
-          class="text-xs text-violet-500 self-start"
+          class="text-xs text-accent-ink self-start"
         >
           {{ showAllTags ? 'Свернуть' : `Показать все (${tagCounts.length})` }}
         </button>

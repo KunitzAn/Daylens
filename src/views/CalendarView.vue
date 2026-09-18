@@ -62,14 +62,14 @@ function open(date: string) {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-[#faf9f7] px-4 pt-6 pb-28 flex justify-center">
+  <main class="min-h-dvh px-4 pt-6 pb-28 flex justify-center">
     <div class="w-full max-w-md flex flex-col gap-4">
       <header class="flex items-center justify-between gap-3">
         <h1 class="text-xl font-semibold text-neutral-800">Календарь</h1>
         <SyncStatus />
       </header>
 
-      <div class="rounded-3xl bg-white p-4 flex flex-col gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+      <div class="rounded-card bg-white p-4 flex flex-col gap-4 shadow-clay-1">
         <div class="flex items-center justify-between">
           <button
             type="button"
@@ -103,14 +103,15 @@ function open(date: string) {
               :disabled="isFutureDate(cell.date)"
               :aria-label="cell.date"
               @click="open(cell.date)"
-              class="aspect-square rounded-xl flex items-center justify-center text-sm transition-transform disabled:opacity-30"
+              class="tone aspect-square rounded-xl flex items-center justify-center text-sm transition-transform disabled:opacity-30 active:scale-95"
               :class="[
-                cellColor(cell.date) ? 'font-medium' : 'text-neutral-500 bg-neutral-100',
-                cell.date === today ? 'ring-2 ring-violet-400' : '',
+                cellColor(cell.date) ? 'font-bold shadow-clay-1' : 'text-neutral-400 bg-white/70 shadow-clay-1',
+                cell.date === today ? 'ring-2 ring-accent-ink ring-offset-2 ring-offset-white' : '',
               ]"
               :style="
                 cellColor(cell.date)
                   ? {
+                      '--c': cellColor(cell.date),
                       backgroundColor: cellColor(cell.date),
                       color: readableTextOn(cellColor(cell.date)!),
                     }
@@ -123,12 +124,12 @@ function open(date: string) {
         </div>
       </div>
 
-      <div class="rounded-3xl bg-white p-4 flex flex-wrap items-center gap-x-3 gap-y-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
+      <div class="rounded-card bg-white p-4 flex flex-wrap items-center gap-x-3 gap-y-2 shadow-clay-1">
         <span class="text-xs text-neutral-400">Хуже</span>
         <span
           v-for="level in [1, 2, 3, 4, 5, 6, 7]"
           :key="level"
-          class="w-5 h-5 rounded-md"
+          class="w-5 h-5 rounded-lg shadow-clay-1"
           :style="{ backgroundColor: colorFor(level) }"
           :title="moodLevel(level)?.label"
         />

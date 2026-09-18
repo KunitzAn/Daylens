@@ -27,13 +27,13 @@ function goBack() {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-[#faf9f7] px-4 pt-6 pb-10 flex justify-center">
+  <main class="min-h-dvh px-4 pt-6 pb-10 flex justify-center">
     <div class="w-full max-w-md flex flex-col gap-4">
       <button
         type="button"
         aria-label="Назад"
         @click="goBack"
-        class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-[0_4px_8px_rgba(0,0,0,0.06)] shrink-0 self-start"
+        class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0 self-start"
       >
         <ArrowLeft :size="20" class="text-neutral-600" />
       </button>

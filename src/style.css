@@ -1,5 +1,162 @@
 @import "tailwindcss";
 
+/* Nunito, вариативный 400–800, две подмножества (кириллица + латиница), 58 КБ.
+   Кладём в проект, а не грузим с fonts.googleapis.com: приложение offline-first,
+   и шрифт по сети означал бы, что без интернета оно открывается без шрифта.
+   Лицензия OFL — self-hosting разрешён. */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/nunito-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/nunito-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  /* ui-rounded в запасе: если Nunito почему-то не доехал, на айфоне подхватится
+     системный SF Pro Rounded, и пластика не развалится. */
+  --font-sans: 'Nunito', ui-rounded, system-ui, -apple-system, sans-serif;
+
+  /* Пластилин — это всегда три тени сразу: внешняя мягкая снизу, внутренняя
+     светлая сверху и внутренняя тёмная снизу. Четыре ступени глубины:
+     1 — карточки, 2 — контролы, 3 — плавающее, in — нажатое. */
+  --shadow-clay-1:
+    0 1px 2px rgba(44, 39, 51, .04),
+    0 10px 22px -10px rgba(44, 39, 51, .14),
+    inset 0 2px 2px rgba(255, 255, 255, .95),
+    inset 0 -3px 6px rgba(44, 39, 51, .045);
+  --shadow-clay-2:
+    0 2px 4px rgba(44, 39, 51, .05),
+    0 12px 20px -8px rgba(44, 39, 51, .18),
+    inset 0 3px 3px rgba(255, 255, 255, .95),
+    inset 0 -4px 8px rgba(44, 39, 51, .07);
+  --shadow-clay-3:
+    0 4px 8px rgba(44, 39, 51, .06),
+    0 18px 32px -10px rgba(44, 39, 51, .26),
+    inset 0 3px 4px rgba(255, 255, 255, .9),
+    inset 0 -5px 10px rgba(44, 39, 51, .08);
+  --shadow-clay-in:
+    inset 0 4px 9px rgba(44, 39, 51, .22),
+    inset 0 -1px 0 rgba(255, 255, 255, .5);
+
+  --radius-card: 28px;
+  --radius-tile: 20px;
+
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+}
+
+:root {
+  /* Цвет приложения. Значение подменяется на лету из настроек (см. lib/accents),
+     поэтому живёт обычной переменной, а не константой в @theme. */
+  --accent: #8b5cf6;
+  /* Неон уходит в свечение, а под белый текст берётся затемнённый оттенок:
+     белая подпись на лаймовом или голубом не читается. */
+  --accent-ink: color-mix(in oklab, var(--accent) 74%, #1b1725);
+  --accent-soft: color-mix(in oklab, var(--accent) 13%, #fff);
+}
+
 body {
   margin: 0;
+  background: #faf9f7;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Амбиентный «меш»: два больших мягких пятна на фоне вьюпорта. Чистый градиент,
+   без картинок и JS, ничего не перерисовывает при прокрутке. Цвет ведёт за
+   выбранным акцентом, поэтому смена цвета приложения меняет и воздух вокруг. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(40vmax 36vmax at 12% -2%, color-mix(in oklab, var(--accent) 20%, transparent), transparent 70%),
+    radial-gradient(34vmax 30vmax at 94% 80%, color-mix(in oklab, #fb923c 15%, transparent), transparent 70%);
+  opacity: .5;
+}
+
+/* --------------------------------------------------------------------------
+   Цветные эффекты. Цвета настроений и разделов задаёт пользователь, поэтому
+   всё считается из инлайнового --c, а не из заранее заданной палитры.
+   -------------------------------------------------------------------------- */
+
+/* Пол по насыщенности: цвет элемента остаётся ровно тем, что выбрал
+   пользователь, а светится он насыщенной версией того же тона. Иначе на
+   пастельной палитре свечения просто не видно — от почти белого неона не бывает.
+   oklch(from …) — Safari 16.4+ / Chrome 119+; где его нет, --glow остаётся
+   исходным цветом и свечение просто мягче. */
+.tone {
+  --glow: var(--c);
+}
+@supports (color: oklch(from red l c h)) {
+  .tone {
+    --glow: oklch(from var(--c) min(l, .72) max(c, .2) h);
+  }
+}
+
+/* Ореол вокруг плитки. Рисуется за её границей, поэтому виден и тогда, когда
+   внутри непрозрачная картинка из набора настроений — подсветить её изнутри
+   было бы нечем. */
+.halo {
+  box-shadow:
+    var(--shadow-clay-2),
+    0 0 18px -1px color-mix(in oklab, var(--glow) 62%, transparent),
+    0 10px 26px -4px color-mix(in oklab, var(--glow) 80%, transparent);
+}
+
+/* Подсветка экрана цветом дня. Светлоту нормализуем, а не берём как есть:
+   у «Прекрасно» в классической палитре цвет тёмно-зелёный, и прямой заливкой
+   он ложился на пол-экрана грязным пятном. Нормализованный тон даёт ровный
+   мягкий воздух и на тёмных, и на пастельных палитрах. */
+.mood-ambient {
+  --wash: color-mix(in oklab, var(--c) 30%, transparent);
+  background: radial-gradient(60% 60% at 50% 10%, var(--wash), transparent 72%);
+}
+@supports (color: oklch(from red l c h)) {
+  .mood-ambient {
+    --wash: oklch(from var(--c) .9 min(c, .13) h / .8);
+  }
+}
+
+/* Главное действие экрана — тот же неон, что у «+». */
+.btn-primary {
+  background: linear-gradient(160deg, var(--accent), var(--accent-ink));
+  box-shadow:
+    var(--shadow-clay-3),
+    0 14px 28px -8px color-mix(in oklab, var(--accent) 75%, transparent);
+}
+
+/* Карточка дня в цвете настроения: заливка слабая, чтобы заметка осталась
+   тёмной на светлом — она главный текст ленты и красить её нельзя. */
+.tint-day {
+  background: color-mix(in oklab, var(--c) 16%, #ffffff);
+}
+
+/* Единственное место со стеклом — плавающий таб-бар над лентой. */
+.glass {
+  background: color-mix(in srgb, #ffffff 68%, transparent);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
 }

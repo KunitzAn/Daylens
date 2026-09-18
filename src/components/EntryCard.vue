@@ -35,7 +35,8 @@ const entryTags = computed(() =>
     tabindex="0"
     @click="emit('open')"
     @keyup.enter="emit('open')"
-    class="relative rounded-3xl bg-white p-4 flex flex-col gap-3 text-left w-full cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+    class="tone tint-day relative rounded-card p-4 flex flex-col gap-3 text-left w-full cursor-pointer shadow-clay-1 transition-transform active:scale-[.99]"
+    :style="{ '--c': moodColor }"
   >
     <button
       type="button"
@@ -48,28 +49,28 @@ const entryTags = computed(() =>
 
     <header class="flex items-center gap-3 pr-8">
       <span
-        class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl shrink-0"
-        :style="{ backgroundColor: moodImage ? 'transparent' : moodColor }"
+        class="halo w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl shrink-0"
+        :style="{ backgroundColor: moodImage ? '#ffffff' : moodColor }"
       >
         <img v-if="moodImage" :src="moodImage" :alt="mood?.label" class="w-full h-full object-cover" />
         <template v-else>{{ mood?.emoji }}</template>
       </span>
 
       <div class="min-w-0">
-        <p class="text-xs uppercase tracking-wide text-neutral-400 truncate">
+        <p class="text-xs uppercase tracking-wide text-neutral-500 truncate">
           {{ formatDateWithWeekday(entry.date) }}
         </p>
         <p class="flex items-baseline gap-2">
-          <span class="text-lg font-semibold" :style="{ color: moodColor }">
-            {{ mood?.label }}
-          </span>
-          <span class="text-xs text-neutral-400">{{ formatTime(entry.createdAt) }}</span>
+          <!-- Подпись тёмная, а не в цвете настроения: карточка теперь сама
+               тонирована этим цветом, и цветной текст на ней сливался бы. -->
+          <span class="text-lg font-bold text-neutral-800">{{ mood?.label }}</span>
+          <span class="text-xs text-neutral-500">{{ formatTime(entry.createdAt) }}</span>
         </p>
       </div>
     </header>
 
     <div v-if="entryTags.length" class="flex flex-wrap gap-x-3 gap-y-2">
-      <span v-for="tag in entryTags" :key="tag.id" class="flex items-center gap-1.5 text-sm text-neutral-600">
+      <span v-for="tag in entryTags" :key="tag.id" class="flex items-center gap-1.5 text-sm text-neutral-700">
         <component
           :is="resolveIcon(tag.icon)"
           :size="16"
@@ -80,6 +81,6 @@ const entryTags = computed(() =>
       </span>
     </div>
 
-    <p v-if="entry.note" class="text-sm text-neutral-600 whitespace-pre-line">{{ entry.note }}</p>
+    <p v-if="entry.note" class="text-sm text-neutral-700 whitespace-pre-line">{{ entry.note }}</p>
   </article>
 </template>

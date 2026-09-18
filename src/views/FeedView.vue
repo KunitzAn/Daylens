@@ -60,7 +60,7 @@ async function removeEntry(entry: Entry) {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-[#faf9f7] px-4 pt-6 pb-28 flex justify-center">
+  <main class="min-h-dvh px-4 pt-6 pb-28 flex justify-center">
     <div class="w-full max-w-md flex flex-col gap-4">
       <header class="flex items-center justify-between gap-3">
         <h1 class="text-xl font-semibold text-neutral-800">Записи</h1>
@@ -70,7 +70,7 @@ async function removeEntry(entry: Entry) {
             type="button"
             aria-label="Запись за другой день"
             @click="pickingDay = true"
-            class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-neutral-500 shadow-[0_4px_8px_rgba(0,0,0,0.06)] shrink-0"
+            class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-neutral-500 shadow-clay-1 shrink-0"
           >
             <CalendarPlus :size="18" />
           </button>
@@ -79,7 +79,7 @@ async function removeEntry(entry: Entry) {
 
       <p
         v-if="entries.length === 0"
-        class="text-sm text-neutral-500 bg-white rounded-3xl p-6 text-center"
+        class="text-sm text-neutral-500 bg-white rounded-card p-6 text-center"
       >
         Записей пока нет. Нажмите «+», чтобы записать сегодняшний день, или значок календаря —
         чтобы заполнить любой другой.
@@ -102,7 +102,7 @@ async function removeEntry(entry: Entry) {
         v-if="hasMore"
         type="button"
         @click="limit += PAGE_SIZE"
-        class="rounded-2xl bg-white py-3 text-sm text-neutral-500 shadow-[0_4px_8px_rgba(0,0,0,0.06)]"
+        class="rounded-2xl bg-white py-3 text-sm text-neutral-500 shadow-clay-1"
       >
         Показать ещё
       </button>

@@ -37,7 +37,7 @@ function heightPercent(value: number | null): number {
              Пустой период не рисует ничего — только пустая колонка. -->
         <span
           v-if="bar.value !== null"
-          class="w-full rounded-t-md transition-opacity ring-1 ring-inset ring-black/[0.07]"
+          class="w-full rounded-t-xl rounded-b-sm transition-opacity ring-1 ring-inset ring-black/[0.07] shadow-clay-1"
           :style="{ height: `${heightPercent(bar.value)}%`, backgroundColor: bar.color }"
           :class="selectedKey && selectedKey !== bar.key ? 'opacity-45' : ''"
         />

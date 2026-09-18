@@ -13,6 +13,7 @@ import {
 import { formatDateHuman } from '../lib/date'
 import { resolveIcon } from '../lib/icons'
 import { MOOD_LEVELS } from '../lib/mood'
+import { useMoodColors } from '../lib/moodPalettes'
 import { resolveMoodSet } from '../lib/moodSets'
 import { runSync } from '../lib/sync'
 import { useLiveQuery } from '../lib/useLiveQuery'
@@ -25,6 +26,7 @@ const activeMoodSetId = useLiveQuery<string>(
   DEFAULT_MOOD_SET_ID,
 )
 const activeMoodSet = computed(() => resolveMoodSet(activeMoodSetId.value))
+const { colorFor } = useMoodColors()
 
 const categories = useLiveQuery<Category[]>(
   () => db.categories.orderBy('sortOrder').filter((c) => c.archivedAt === null).toArray(),
@@ -49,6 +51,19 @@ const entryId = ref<string | null>(null)
 const mood = ref<number | null>(null)
 const selectedTagIds = ref<string[]>([])
 const note = ref('')
+
+// Подсветка всего экрана цветом выбранного настроения — ради этого стиль и брали.
+const ambientColor = computed(() => (mood.value === null ? null : colorFor.value(mood.value)))
+
+/**
+ * Заливаем плитку цветом только у эмодзи-наборов. Если набор картиночный,
+ * заливки всё равно не видно — картинка непрозрачна и закрывает плитку
+ * целиком, поэтому цвет там несёт ореол снаружи (класс .halo).
+ */
+function moodTileFill(level: number): string {
+  const isSelected = mood.value === level
+  return isSelected && !activeMoodSet.value.images ? colorFor.value(level) : '#ffffff'
+}
 
 async function loadEntry(date: string) {
   const existing = await db.entries.where('date').equals(date).first()
@@ -147,6 +162,15 @@ async function save() {
 
 <template>
   <div class="w-full flex flex-col items-center gap-8">
+    <!-- Экран теплеет под выбранное настроение. Лежит за содержимым, но над
+         общим фоновым «мешем» (у него z-index: -2). -->
+    <div
+      v-if="ambientColor"
+      aria-hidden="true"
+      class="mood-ambient fixed inset-x-0 top-0 h-[55vh] pointer-events-none transition-opacity duration-500"
+      :style="{ zIndex: -1, '--c': ambientColor }"
+    />
+
     <header class="text-center">
       <!-- Без CSS `capitalize`: он поднимает регистр у каждого слова и делает
            из «17 сентября» — «17 Сентября». -->
@@ -165,8 +189,16 @@ async function save() {
         :aria-label="level.label"
         :title="level.label"
         @click="mood = level.value"
-        class="w-full aspect-square flex items-center justify-center rounded-2xl overflow-hidden bg-white transition-transform shadow-[0_6px_12px_rgba(0,0,0,0.08),inset_2px_2px_4px_rgba(255,255,255,0.7),inset_-2px_-2px_4px_rgba(0,0,0,0.06)]"
-        :class="mood === level.value ? 'scale-110 ring-2 ring-violet-400' : 'opacity-70 hover:opacity-100'"
+        class="tone w-full aspect-square flex items-center justify-center rounded-tile overflow-hidden transition-transform duration-200"
+        :style="{
+          '--c': colorFor(level.value),
+          backgroundColor: moodTileFill(level.value),
+        }"
+        :class="
+          mood === level.value
+            ? 'halo -translate-y-1 scale-105'
+            : 'shadow-clay-2 opacity-75 hover:opacity-100'
+        "
       >
         <img
           v-if="activeMoodSet.images"
@@ -197,13 +229,18 @@ async function save() {
             @click="toggleTag(tag.id)"
             class="flex flex-col items-center gap-1 min-w-0"
           >
+            <!-- Выбранный тег вдавливается внутрь: для переключателя
+                 «было / не было» это точнее, чем просто заливка. -->
             <span
-              class="w-14 h-14 shrink-0 rounded-full flex items-center justify-center border-2 transition-transform"
-              :class="selectedTagIds.includes(tag.id) ? 'scale-105' : ''"
-              :style="
+              class="tone w-14 h-14 shrink-0 rounded-full flex items-center justify-center transition-all duration-150"
+              :style="{
+                '--c': category.color,
+                backgroundColor: selectedTagIds.includes(tag.id) ? category.color : '#ffffff',
+              }"
+              :class="
                 selectedTagIds.includes(tag.id)
-                  ? { backgroundColor: category.color, borderColor: category.color }
-                  : { backgroundColor: 'white', borderColor: category.color }
+                  ? 'shadow-clay-in'
+                  : 'shadow-clay-2 hover:-translate-y-0.5'
               "
             >
               <component
@@ -248,7 +285,7 @@ async function save() {
             type="text"
             placeholder="Название действия"
             @keyup.enter="saveNewTag(category.id)"
-            class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-violet-300"
+            class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
           />
           <button
             type="button"
@@ -276,14 +313,14 @@ async function save() {
       v-model="note"
       placeholder="Заметка (необязательно)"
       rows="3"
-      class="w-full rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-violet-300 resize-none"
+      class="w-full rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent resize-none"
     />
 
     <button
       type="button"
       :disabled="!canSave"
       @click="save"
-      class="w-full rounded-2xl py-3 text-white font-medium transition-opacity bg-violet-400 shadow-[0_6px_12px_rgba(0,0,0,0.1)] disabled:opacity-40"
+      class="btn-primary w-full rounded-2xl py-3.5 text-white font-bold transition-opacity disabled:opacity-40"
     >
       {{ entryId ? 'Сохранить изменения' : 'Записать' }}
     </button>

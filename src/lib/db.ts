@@ -48,6 +48,8 @@ export const ACTIVE_MOOD_SET_KEY = 'activeMoodSetId'
 export const DEFAULT_MOOD_SET_ID = 'emoji'
 export const ACTIVE_PALETTE_KEY = 'activeMoodPaletteId'
 export const DEFAULT_PALETTE_ID = 'classic'
+export const ACTIVE_ACCENT_KEY = 'activeAccentId'
+export const DEFAULT_ACCENT_ID = 'violet'
 
 export const db = new Dexie('daylens') as Dexie & {
   categories: EntityTable<Category, 'id'>

@@ -21,13 +21,13 @@ async function select(id: string) {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-[#faf9f7] p-6 flex justify-center">
+  <main class="min-h-dvh p-6 flex justify-center">
     <div class="w-full max-w-md flex flex-col gap-6">
       <header class="flex items-center gap-3">
         <button
           type="button"
           @click="router.push('/more')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-[0_4px_8px_rgba(0,0,0,0.06)] shrink-0"
+          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -45,7 +45,7 @@ async function select(id: string) {
         :class="
           activeId === set.id
             ? 'shadow-[0_0_0_2px_#a78bfa]'
-            : 'shadow-[0_4px_8px_rgba(0,0,0,0.06)]'
+            : 'shadow-clay-1'
         "
       >
         <span class="text-sm font-medium text-neutral-700">{{ set.name }}</span>

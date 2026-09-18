@@ -43,14 +43,14 @@ function pick(name: string) {
     <template v-if="open">
       <div class="fixed inset-0 z-40" @click="open = false" />
       <div
-        class="absolute z-50 mt-2 w-72 p-3 bg-white rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.15)] flex flex-col gap-2"
+        class="absolute z-50 mt-2 w-72 p-3 bg-white rounded-2xl shadow-clay-3 flex flex-col gap-2"
       >
         <input
           v-model="query"
           type="text"
           placeholder="Поиск: спорт, еда, coffee…"
           autofocus
-          class="rounded-xl bg-neutral-100 px-3 py-2 text-sm text-neutral-700 outline-none focus:ring-2 focus:ring-violet-300"
+          class="rounded-xl bg-neutral-100 px-3 py-2 text-sm text-neutral-700 outline-none focus:ring-2 focus:ring-accent"
         />
 
         <div class="max-h-64 overflow-y-auto flex flex-col gap-2">
