@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { CalendarPlus } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import EntryCard from '../components/EntryCard.vue'
-import PickDaySheet from '../components/PickDaySheet.vue'
 import SyncStatus from '../components/SyncStatus.vue'
 import {
   ACTIVE_MOOD_SET_KEY,
@@ -23,7 +21,6 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 const router = useRouter()
 const PAGE_SIZE = 20
 const limit = ref(PAGE_SIZE)
-const pickingDay = ref(false)
 
 const entries = useLiveQuery<Entry[]>(
   () =>
@@ -66,28 +63,15 @@ async function removeEntry(entry: Entry) {
     <div class="w-full max-w-md flex flex-col gap-4">
       <header class="flex items-center justify-between gap-3">
         <h1 class="text-xl font-semibold text-neutral-800">Записи</h1>
-        <div class="flex items-center gap-2">
-          <SyncStatus />
-          <button
-            type="button"
-            aria-label="Запись за другой день"
-            @click="pickingDay = true"
-            class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-neutral-500 shadow-clay-1 shrink-0"
-          >
-            <CalendarPlus :size="18" />
-          </button>
-        </div>
+        <SyncStatus />
       </header>
 
       <p
         v-if="entries.length === 0"
         class="text-sm text-neutral-500 bg-white rounded-card p-6 text-center"
       >
-        Записей пока нет. Нажмите «+», чтобы записать сегодняшний день, или значок календаря —
-        чтобы заполнить любой другой.
+        Записей пока нет. Нажмите «+», чтобы выбрать день и записать.
       </p>
-
-      <PickDaySheet v-if="pickingDay" @close="pickingDay = false" @pick="router.push(`/day/${$event}`)" />
 
       <EntryCard
         v-for="entry in visibleEntries"

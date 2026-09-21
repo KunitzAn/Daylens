@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BarChart3, CalendarDays, MoreHorizontal, NotebookPen, Plus } from '@lucide/vue'
+import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { todayLocalDate } from '../lib/date'
+import PickDaySheet from './PickDaySheet.vue'
 
 const router = useRouter()
+const pickingDay = ref(false)
 
 const tabs = [
   { to: '/', label: 'Записи', icon: NotebookPen },
@@ -11,6 +13,11 @@ const tabs = [
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
   { to: '/more', label: 'Больше', icon: MoreHorizontal },
 ]
+
+function openDay(date: string) {
+  pickingDay.value = false
+  router.push(`/day/${date}`)
+}
 </script>
 
 <template>
@@ -33,10 +40,15 @@ const tabs = [
         </RouterLink>
       </nav>
 
+      <!-- Раньше «+» сразу вело на сегодня, а выбор другого дня жил в
+           отдельной маленькой кнопке на экране ленты — два способа сделать
+           одно и то же. Теперь «+» само спрашивает «за какой день», а
+           «Сегодня» — первый и самый быстрый вариант в этом листе, так что
+           обычный ежедневный путь не стал длиннее чем на один тап. -->
       <button
         type="button"
-        aria-label="Добавить запись за сегодня"
-        @click="router.push(`/day/${todayLocalDate()}`)"
+        aria-label="Добавить запись"
+        @click="pickingDay = true"
         class="pointer-events-auto w-14 h-14 shrink-0 rounded-full text-white flex items-center justify-center transition-transform active:scale-95"
         :style="{
           background: 'linear-gradient(160deg, var(--accent), var(--accent-ink))',
@@ -48,4 +60,6 @@ const tabs = [
       </button>
     </div>
   </div>
+
+  <PickDaySheet v-if="pickingDay" @close="pickingDay = false" @pick="openDay" />
 </template>
