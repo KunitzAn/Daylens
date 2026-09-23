@@ -21,6 +21,9 @@ export interface ChartBar {
   /** Среднее настроение за период; null — записей нет. */
   value: number | null
   color: string | undefined
+  /** Доля дней бакета с выбранным действием (0–1). null — фильтр по действию не активен
+   *  или в бакете нет записей вовсе. Используется только для точек-маркеров под графиком. */
+  markerShare?: number | null
 }
 
 export const GRANULARITIES: { value: Granularity; label: string; chartTitle: string }[] = [

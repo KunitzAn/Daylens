@@ -5,6 +5,8 @@ import type { ChartBar } from '../lib/periods'
 const props = defineProps<{
   bars: ChartBar[]
   selectedKey: string | null
+  /** Цвет дорожки-маркера выбранного действия. null/не задан — маркеры не рисуем. */
+  markerColor?: string | null
 }>()
 const emit = defineEmits<{ select: [key: string | null] }>()
 
@@ -15,6 +17,17 @@ const labelEvery = computed(() => (props.bars.length > 8 ? Math.ceil(props.bars.
 
 function heightPercent(value: number | null): number {
   return value === null ? 0 : (value / MAX_LEVEL) * 100
+}
+
+/**
+ * Непрозрачность столбика: выбор периода и фильтр по действию — два разных
+ * затемнения, но одновременно оба не нужны — выбранный период всегда читается
+ * чётко, а маркер добавляет градацию только когда период не выбран точечно.
+ */
+function barOpacity(bar: ChartBar): number {
+  if (props.selectedKey) return props.selectedKey === bar.key ? 1 : 0.45
+  if (props.markerColor && bar.markerShare != null) return 0.3 + bar.markerShare * 0.7
+  return 1
 }
 </script>
 
@@ -38,10 +51,21 @@ function heightPercent(value: number | null): number {
         <span
           v-if="bar.value !== null"
           class="w-full rounded-t-xl rounded-b-sm transition-opacity ring-1 ring-inset ring-black/[0.07] shadow-clay-1"
-          :style="{ height: `${heightPercent(bar.value)}%`, backgroundColor: bar.color }"
-          :class="selectedKey && selectedKey !== bar.key ? 'opacity-45' : ''"
+          :style="{ height: `${heightPercent(bar.value)}%`, backgroundColor: bar.color, opacity: barOpacity(bar) }"
         />
       </button>
+    </div>
+
+    <!-- Дорожка маркеров выбранного действия: точка есть, если в этот день
+         (или у части дней бакета) оно было отмечено; насыщенность = доля. -->
+    <div v-if="markerColor" class="flex gap-[3px] h-2">
+      <span v-for="bar in bars" :key="`${bar.key}-marker`" class="flex-1 min-w-0 flex items-center justify-center">
+        <span
+          v-if="bar.markerShare != null && bar.markerShare > 0"
+          class="w-1.5 h-1.5 rounded-full shrink-0"
+          :style="{ backgroundColor: markerColor, opacity: 0.35 + bar.markerShare * 0.65 }"
+        />
+      </span>
     </div>
 
     <div class="flex gap-[3px]">

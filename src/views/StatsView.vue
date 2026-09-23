@@ -23,10 +23,12 @@ import {
   type ChartBar,
   type Granularity,
 } from '../lib/periods'
+import { bucketTagShare, tagMoodComparison } from '../lib/stats'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
 const granularity = ref<Granularity>('day')
 const selectedKey = ref<string | null>(null)
+const selectedTagId = ref<string | null>(null)
 const showAllTags = ref(false)
 
 const { colorFor } = useMoodColors()
@@ -44,9 +46,14 @@ const activeMoodSetId = useLiveQuery<string>(
 const customMoodSets = useLiveQuery<MoodEmojiSet[]>(() => db.moodEmojiSets.toArray(), [])
 const moodSet = computed(() => resolveMoodSet(activeMoodSetId.value, customMoodSets.value))
 
-// Смена масштаба обнуляет выбор: ключи периодов разных масштабов несовместимы.
+// Смена масштаба обнуляет оба выбора: ключи периодов разных масштабов
+// несовместимы, а список тегов пересобирается заново — ранее выбранного
+// действия там может уже не быть. А вот при выборе конкретного столбика
+// (selectedKey) фильтр по действию нарочно остаётся: это и есть сценарий
+// «посмотреть маркеры и сравнение именно для этой недели».
 watch(granularity, () => {
   selectedKey.value = null
+  selectedTagId.value = null
 })
 
 const buckets = computed(() => buildBuckets(granularity.value))
@@ -80,6 +87,9 @@ const bars = computed<ChartBar[]>(() =>
       value: average,
       // Цвет — из активной палитры, по округлённому среднему уровню.
       color: average === null ? undefined : colorFor.value(Math.round(average)),
+      markerShare: selectedTagId.value
+        ? bucketTagShare(entryByDate.value, bucket.dates, selectedTagId.value)
+        : null,
     }
   }),
 )
@@ -125,6 +135,32 @@ const tagCounts = computed(() => {
 const visibleTags = computed(() =>
   showAllTags.value ? tagCounts.value : tagCounts.value.slice(0, TOP_TAGS),
 )
+
+function selectTag(tagId: string) {
+  selectedTagId.value = selectedTagId.value === tagId ? null : tagId
+}
+
+const selectedTag = computed(() => {
+  if (!selectedTagId.value) return null
+  const tag = tagsById.value.get(selectedTagId.value)
+  if (!tag) return null
+  return { ...tag, color: categoriesById.value.get(tag.categoryId)?.color ?? '#a8a29e' }
+})
+
+const comparisonRows = computed(() => {
+  if (!selectedTagId.value) return null
+  const { withTag, withoutTag } = tagMoodComparison(entryByDate.value, focusDates.value, selectedTagId.value)
+  return [
+    { key: 'with', label: `С «${selectedTag.value?.name}»`, ...withTag },
+    { key: 'without', label: 'Без него', ...withoutTag },
+  ]
+})
+
+const moodDelta = computed(() => {
+  const [withRow, withoutRow] = comparisonRows.value ?? []
+  if (withRow?.average == null || withoutRow?.average == null) return null
+  return withRow.average - withoutRow.average
+})
 </script>
 
 <template>
@@ -191,11 +227,68 @@ const visibleTags = computed(() =>
       </div>
 
       <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
-        <h2 class="text-sm font-medium text-neutral-700">
-          {{ GRANULARITIES.find((g) => g.value === granularity)?.chartTitle }}
-        </h2>
-        <MoodBarChart :bars="bars" :selected-key="selectedKey" @select="selectedKey = $event" />
-        <p class="text-[11px] text-neutral-400">Нажмите на столбик, чтобы посмотреть период.</p>
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-sm font-medium text-neutral-700">
+            {{ GRANULARITIES.find((g) => g.value === granularity)?.chartTitle }}
+          </h2>
+          <div v-if="selectedTag" class="flex items-center gap-1.5">
+            <span
+              class="flex items-center gap-1 rounded-full pl-1.5 pr-2 py-1 text-xs font-medium"
+              :style="{ backgroundColor: `${selectedTag.color}1a`, color: selectedTag.color }"
+            >
+              <component :is="resolveIcon(selectedTag.icon)" :size="12" />
+              {{ selectedTag.name }}
+            </span>
+            <button
+              type="button"
+              aria-label="Убрать фильтр по действию"
+              @click="selectedTagId = null"
+              class="w-5 h-5 rounded-full bg-white flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
+            >
+              <X :size="11" />
+            </button>
+          </div>
+        </div>
+        <MoodBarChart
+          :bars="bars"
+          :selected-key="selectedKey"
+          :marker-color="selectedTag?.color ?? null"
+          @select="selectedKey = $event"
+        />
+        <p class="text-[11px] text-neutral-400">
+          {{
+            selectedTag
+              ? 'Точки под графиком — дни с этим действием.'
+              : 'Нажмите на столбик, чтобы посмотреть период.'
+          }}
+        </p>
+      </section>
+
+      <section v-if="selectedTag && comparisonRows" class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+        <h2 class="text-sm font-medium text-neutral-700">Настроение с «{{ selectedTag.name }}» и без</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div v-for="row in comparisonRows" :key="row.key" class="flex flex-col gap-2">
+            <p class="text-xs text-neutral-400">{{ row.label }} · {{ row.days }}</p>
+            <p v-if="row.average === null" class="text-lg text-neutral-300">—</p>
+            <div v-else class="flex items-center gap-2">
+              <span
+                class="w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                :style="{ backgroundColor: colorFor(Math.round(row.average)) }"
+              >
+                <img
+                  v-if="moodSet.images"
+                  :src="moodSet.images[Math.round(row.average) - 1]"
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-lg leading-none">{{ moodSetEmoji(moodSet, Math.round(row.average)) }}</span>
+              </span>
+              <span class="text-sm text-neutral-600 tabular-nums">{{ row.average.toFixed(1) }}</span>
+            </div>
+          </div>
+        </div>
+        <p v-if="moodDelta !== null" class="text-xs text-neutral-500">
+          Разница: <span class="font-medium text-neutral-700">{{ moodDelta > 0 ? '+' : '' }}{{ moodDelta.toFixed(1) }}</span>
+        </p>
       </section>
 
       <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
@@ -205,7 +298,15 @@ const visibleTags = computed(() =>
           За этот период ничего не отмечено.
         </p>
 
-        <div v-for="row in visibleTags" :key="row.tag.id" class="flex items-center gap-3">
+        <button
+          v-for="row in visibleTags"
+          :key="row.tag.id"
+          type="button"
+          :aria-pressed="selectedTagId === row.tag.id"
+          @click="selectTag(row.tag.id)"
+          class="flex items-center gap-3 w-full text-left rounded-xl px-1.5 py-1 -mx-1.5 transition-colors"
+          :class="selectedTagId === row.tag.id ? 'bg-neutral-50' : ''"
+        >
           <component
             :is="resolveIcon(row.tag.icon)"
             :size="16"
@@ -225,7 +326,7 @@ const visibleTags = computed(() =>
           <span class="text-sm text-neutral-500 tabular-nums w-6 text-right shrink-0">
             {{ row.count }}
           </span>
-        </div>
+        </button>
 
         <button
           v-if="tagCounts.length > TOP_TAGS"
