@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, sql } from 'drizzle-orm'
 import { categories, entries, entryTags, tags } from '../../db/schema'
 import type { AuthedData } from '../_lib/context'
 import { getDb, type Db } from '../_lib/db'
@@ -121,15 +121,8 @@ export const onRequestPost: PagesFunction<Env, string, AuthedData> = async (ctx)
   }>(ctx.request)
   if (!body) return error(400, 'invalid_body')
 
-  const acceptedCategories: string[] = []
-  for (const c of body.categories ?? []) {
-    if (await upsertCategory(db, userId, c)) acceptedCategories.push(c.id)
-  }
-
-  const acceptedTags: string[] = []
-  for (const t of body.tags ?? []) {
-    if (await upsertTag(db, userId, t)) acceptedTags.push(t.id)
-  }
+  const acceptedCategories = await upsertCategories(db, userId, body.categories ?? [])
+  const acceptedTags = await upsertTags(db, userId, body.tags ?? [])
 
   const acceptedEntries: string[] = []
   for (const e of body.entries ?? []) {
@@ -142,70 +135,85 @@ export const onRequestPost: PagesFunction<Env, string, AuthedData> = async (ctx)
   })
 }
 
-async function upsertCategory(db: Db, userId: number, c: WireCategory): Promise<boolean> {
-  const [existing] = await db.select().from(categories).where(eq(categories.id, c.id)).limit(1)
-  const updatedAt = new Date(c.updatedAt)
-
-  if (existing) {
-    if (existing.userId !== userId) return false // чужая запись — молча игнорируем
-    if (updatedAt <= existing.updatedAt) return false
-    await db
-      .update(categories)
-      .set({
+/**
+ * Раньше апсертили по одной строке — select, потом insert/update, на
+ * категорию или тег. У Neon HTTP-драйвера это две сети на строку, а
+ * Cloudflare Workers режет запрос на 50-м сабзапросе: 11 разделов + 42 тега
+ * (совсем не экстремальный объём для полугода дневника) уже перешагивали
+ * порог, и `POST /api/sync` падал с "Worker threw exception" ПОСЛЕ того,
+ * как разделы успевали записаться, но до того, как доходило до тегов и тем
+ * более до entries — новые записи с телефона поэтому не доезжали вовсе,
+ * не только новые действия. Разбирались по факту жалобы, воспроизвели
+ * ровно на границе 50/51 строки.
+ *
+ * Чинится массовым upsert: один INSERT ... ON CONFLICT ... RETURNING на всю
+ * пачку сразу — один сабзапрос вместо 2×N. `excluded.<col>` — это
+ * предложенная (INSERT-нутая) версия строки, стандартный способ Postgres
+ * сослаться на неё внутри ON CONFLICT DO UPDATE. `setWhere` воспроизводит
+ * прежнюю логику поштучно: чужую строку (по user_id) не трогаем, более
+ * старую (по updatedAt) не трогаем — если апдейт не применился, строка не
+ * попадёт в RETURNING, и она не попадёт в `accepted`.
+ */
+async function upsertCategories(db: Db, userId: number, rows: WireCategory[]): Promise<string[]> {
+  if (rows.length === 0) return []
+  const accepted = await db
+    .insert(categories)
+    .values(
+      rows.map((c) => ({
+        id: c.id,
+        userId,
         name: c.name,
         color: c.color,
         sortOrder: c.sortOrder,
         archivedAt: c.archivedAt ? new Date(c.archivedAt) : null,
-        updatedAt,
-      })
-      .where(eq(categories.id, c.id))
-    return true
-  }
-
-  await db.insert(categories).values({
-    id: c.id,
-    userId,
-    name: c.name,
-    color: c.color,
-    sortOrder: c.sortOrder,
-    archivedAt: c.archivedAt ? new Date(c.archivedAt) : null,
-    updatedAt,
-  })
-  return true
+        updatedAt: new Date(c.updatedAt),
+      })),
+    )
+    .onConflictDoUpdate({
+      target: categories.id,
+      set: {
+        name: sql`excluded.name`,
+        color: sql`excluded.color`,
+        sortOrder: sql`excluded.sort_order`,
+        archivedAt: sql`excluded.archived_at`,
+        updatedAt: sql`excluded.updated_at`,
+      },
+      setWhere: sql`${categories.userId} = ${userId} and excluded.updated_at > ${categories.updatedAt}`,
+    })
+    .returning({ id: categories.id })
+  return accepted.map((r) => r.id)
 }
 
-async function upsertTag(db: Db, userId: number, t: WireTag): Promise<boolean> {
-  const [existing] = await db.select().from(tags).where(eq(tags.id, t.id)).limit(1)
-  const updatedAt = new Date(t.updatedAt)
-
-  if (existing) {
-    if (existing.userId !== userId) return false
-    if (updatedAt <= existing.updatedAt) return false
-    await db
-      .update(tags)
-      .set({
+async function upsertTags(db: Db, userId: number, rows: WireTag[]): Promise<string[]> {
+  if (rows.length === 0) return []
+  const accepted = await db
+    .insert(tags)
+    .values(
+      rows.map((t) => ({
+        id: t.id,
+        userId,
         categoryId: t.categoryId,
         name: t.name,
         icon: t.icon,
         sortOrder: t.sortOrder,
         archivedAt: t.archivedAt ? new Date(t.archivedAt) : null,
-        updatedAt,
-      })
-      .where(eq(tags.id, t.id))
-    return true
-  }
-
-  await db.insert(tags).values({
-    id: t.id,
-    userId,
-    categoryId: t.categoryId,
-    name: t.name,
-    icon: t.icon,
-    sortOrder: t.sortOrder,
-    archivedAt: t.archivedAt ? new Date(t.archivedAt) : null,
-    updatedAt,
-  })
-  return true
+        updatedAt: new Date(t.updatedAt),
+      })),
+    )
+    .onConflictDoUpdate({
+      target: tags.id,
+      set: {
+        categoryId: sql`excluded.category_id`,
+        name: sql`excluded.name`,
+        icon: sql`excluded.icon`,
+        sortOrder: sql`excluded.sort_order`,
+        archivedAt: sql`excluded.archived_at`,
+        updatedAt: sql`excluded.updated_at`,
+      },
+      setWhere: sql`${tags.userId} = ${userId} and excluded.updated_at > ${tags.updatedAt}`,
+    })
+    .returning({ id: tags.id })
+  return accepted.map((r) => r.id)
 }
 
 async function upsertEntry(db: Db, userId: number, e: WireEntry): Promise<boolean> {
