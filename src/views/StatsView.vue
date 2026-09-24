@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
+import { ChevronRight, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MoodBarChart from '../components/MoodBarChart.vue'
@@ -134,8 +134,41 @@ const tagCounts = computed(() => {
     .sort((a, b) => b.count - a.count || a.tag.name.localeCompare(b.tag.name))
 })
 
+// Фильтр по разделу — только те разделы, у которых в периоде вообще есть
+// хоть одно действие: раздел без единой отметки в списке фильтров бесполезен.
+const categoryFilterId = ref<string | null>(null)
+const availableFilterCategories = computed(() => {
+  const ids = new Set(tagCounts.value.map((row) => row.tag.categoryId))
+  return categories.value.filter((c) => ids.has(c.id)).sort((a, b) => a.sortOrder - b.sortOrder)
+})
+
+const COUNT_FILTERS: { value: number; label: string }[] = [
+  { value: 1, label: 'Все' },
+  { value: 2, label: '2+' },
+  { value: 3, label: '3+' },
+  { value: 5, label: '5+' },
+]
+const minCountFilter = ref(1)
+
+// Смена периода/масштаба может увести раздел или порог фильтра в
+// бессмысленное состояние (раздела больше нет в списке) — но, как и с
+// selectedTagId, нарочно не сбрасываем при выборе конкретного столбика:
+// «показать только Спорт» — это предпочтение по всему экрану, а не по бакету.
+watch(granularity, () => {
+  categoryFilterId.value = null
+  minCountFilter.value = 1
+})
+
+const filteredTagCounts = computed(() =>
+  tagCounts.value.filter(
+    (row) =>
+      (categoryFilterId.value === null || row.tag.categoryId === categoryFilterId.value) &&
+      row.count >= minCountFilter.value,
+  ),
+)
+
 const visibleTags = computed(() =>
-  showAllTags.value ? tagCounts.value : tagCounts.value.slice(0, TOP_TAGS),
+  showAllTags.value ? filteredTagCounts.value : filteredTagCounts.value.slice(0, TOP_TAGS),
 )
 
 function selectTag(tagId: string) {
@@ -296,8 +329,49 @@ const moodDelta = computed(() => {
       <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Действия за период</h2>
 
+        <div v-if="availableFilterCategories.length > 1" class="flex gap-1.5 overflow-x-auto -mx-1 px-1">
+          <button
+            type="button"
+            @click="categoryFilterId = null"
+            class="shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors"
+            :class="categoryFilterId === null ? 'bg-accent-ink text-white' : 'bg-neutral-50 text-neutral-500'"
+          >
+            Все разделы
+          </button>
+          <button
+            v-for="cat in availableFilterCategories"
+            :key="cat.id"
+            type="button"
+            @click="categoryFilterId = categoryFilterId === cat.id ? null : cat.id"
+            class="shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors"
+            :class="categoryFilterId === cat.id ? 'text-white' : 'bg-neutral-50 text-neutral-500'"
+            :style="categoryFilterId === cat.id ? { backgroundColor: cat.color } : undefined"
+          >
+            {{ cat.name }}
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-neutral-400 shrink-0">Не реже</span>
+          <div class="flex gap-1.5">
+            <button
+              v-for="opt in COUNT_FILTERS"
+              :key="opt.value"
+              type="button"
+              @click="minCountFilter = opt.value"
+              class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
+              :class="minCountFilter === opt.value ? 'bg-accent-ink text-white' : 'bg-neutral-50 text-neutral-500'"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
         <p v-if="tagCounts.length === 0" class="text-sm text-neutral-400">
           За этот период ничего не отмечено.
+        </p>
+        <p v-else-if="filteredTagCounts.length === 0" class="text-sm text-neutral-400">
+          Под фильтр ничего не подходит.
         </p>
 
         <button
@@ -306,7 +380,7 @@ const moodDelta = computed(() => {
           type="button"
           :aria-pressed="selectedTagId === row.tag.id"
           @click="selectTag(row.tag.id)"
-          class="flex items-center gap-3 w-full text-left rounded-xl px-1.5 py-1 -mx-1.5 transition-colors"
+          class="flex items-center gap-2 w-full text-left rounded-xl px-1.5 py-1 -mx-1.5 transition-colors"
           :class="selectedTagId === row.tag.id ? 'bg-neutral-50' : ''"
         >
           <component
@@ -328,16 +402,22 @@ const moodDelta = computed(() => {
           <span class="text-sm text-neutral-500 tabular-nums w-6 text-right shrink-0">
             {{ row.count }}
           </span>
+          <!-- Шеврон — обозначает, что строка кликабельна (см. подсказку под списком). -->
+          <ChevronRight :size="14" class="text-neutral-300 shrink-0" />
         </button>
 
         <button
-          v-if="tagCounts.length > TOP_TAGS"
+          v-if="filteredTagCounts.length > TOP_TAGS"
           type="button"
           @click="showAllTags = !showAllTags"
           class="text-xs text-accent-ink self-start"
         >
-          {{ showAllTags ? 'Свернуть' : `Показать все (${tagCounts.length})` }}
+          {{ showAllTags ? 'Свернуть' : `Показать все (${filteredTagCounts.length})` }}
         </button>
+
+        <p v-if="tagCounts.length > 0" class="text-[11px] text-neutral-400">
+          Нажмите на действие, чтобы сравнить дни с ним и без — см. график выше.
+        </p>
       </section>
 
       <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
