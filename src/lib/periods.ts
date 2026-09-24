@@ -140,3 +140,111 @@ export function buildBuckets(granularity: Granularity, today = todayLocalDate())
   if (granularity === 'week') return weekBuckets(count, today)
   return monthBuckets(count, today)
 }
+
+// --- Календарные окна для экрана статистики по настроению ---
+//
+// В отличие от buildBuckets («последние N периодов», листать нельзя),
+// это окна с явной навигацией назад/вперёд — «какой у меня был август»,
+// а не «что происходит в последнее время». Две разные модели для двух
+// разных вопросов, см. README.
+
+export type StatsScale = 'month' | 'year' | 'all'
+
+export interface StatsUnit {
+  key: string
+  /** Дни этой единицы полоски частоты — один день (месяц-окно) либо месяц (год/всё время). */
+  dates: string[]
+}
+
+export interface StatsWindow {
+  key: string
+  title: string
+  /** Даты окна, не длиннее сегодняшнего дня. */
+  dates: string[]
+  units: StatsUnit[]
+  /** Можно ли перелистнуть на следующее окно — false на текущем месяце/годе. */
+  canGoNext: boolean
+}
+
+export interface MonthAnchor {
+  year: number
+  month: number // 1–12
+}
+
+export function currentMonthAnchor(today = todayLocalDate()): MonthAnchor {
+  const d = parse(today)
+  return { year: d.getFullYear(), month: d.getMonth() + 1 }
+}
+
+export function shiftMonthAnchor(anchor: MonthAnchor, delta: number): MonthAnchor {
+  const zeroBased = anchor.month - 1 + delta
+  return {
+    year: anchor.year + Math.floor(zeroBased / 12),
+    month: ((zeroBased % 12) + 12) % 12 + 1,
+  }
+}
+
+export function buildMonthWindow(anchor: MonthAnchor, today = todayLocalDate()): StatsWindow {
+  const start = new Date(anchor.year, anchor.month - 1, 1)
+  const end = new Date(anchor.year, anchor.month, 0)
+  const dates = daysBetween(start, end, today)
+  const current = currentMonthAnchor(today)
+  return {
+    key: `${anchor.year}-${pad(anchor.month)}`,
+    title: `${MONTHS_FULL[anchor.month - 1]} ${anchor.year}`,
+    dates,
+    // Юнит полоски частоты на масштабе «месяц» — один день.
+    units: dates.map((date) => ({ key: date, dates: [date] })),
+    canGoNext: anchor.year < current.year || (anchor.year === current.year && anchor.month < current.month),
+  }
+}
+
+export function buildYearWindow(year: number, today = todayLocalDate()): StatsWindow {
+  const start = new Date(year, 0, 1)
+  const end = new Date(year, 11, 31)
+  const dates = daysBetween(start, end, today)
+
+  const units: StatsUnit[] = []
+  for (let m = 0; m < 12; m++) {
+    const monthDates = daysBetween(new Date(year, m, 1), new Date(year, m + 1, 0), today)
+    if (monthDates.length === 0) break // будущий месяц ещё не наступил
+    units.push({ key: `${year}-${pad(m + 1)}`, dates: monthDates })
+  }
+
+  const currentYear = Number(today.slice(0, 4))
+  return {
+    key: String(year),
+    title: `${year} год`,
+    dates,
+    units,
+    canGoNext: year < currentYear,
+  }
+}
+
+/**
+ * Окно «Всё время» — от первой записи пользователя до сегодня. В отличие от
+ * месяца/года это не календарная сетка, а диапазон, зависящий от данных,
+ * поэтому строится не от якоря, а от списка дат всех записей. Юниты —
+ * помесячные, тем же способом, что и в годовом окне (иначе на годах данных
+ * полоска частоты была бы из тысяч дневных точек).
+ */
+export function buildAllTimeWindow(entryDates: string[], today = todayLocalDate()): StatsWindow {
+  if (entryDates.length === 0) {
+    return { key: 'all', title: 'Всё время', dates: [], units: [], canGoNext: false }
+  }
+  const earliest = entryDates.reduce((min, d) => (d < min ? d : min))
+  const start = parse(earliest)
+  const end = parse(today)
+  const dates = daysBetween(start, end, today)
+
+  const units: StatsUnit[] = []
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1)
+  const endCursor = new Date(end.getFullYear(), end.getMonth(), 1)
+  while (cursor <= endCursor) {
+    const monthDates = daysBetween(cursor, new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0), today)
+    units.push({ key: toKey(cursor), dates: monthDates })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+
+  return { key: 'all', title: 'Всё время', dates, units, canGoNext: false }
+}

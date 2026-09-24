@@ -10,6 +10,7 @@ import MoodPaletteEditView from './views/MoodPaletteEditView.vue'
 import MoodPalettesView from './views/MoodPalettesView.vue'
 import MoodSetEditView from './views/MoodSetEditView.vue'
 import MoodSetsView from './views/MoodSetsView.vue'
+import MoodStatsView from './views/MoodStatsView.vue'
 import MoreView from './views/MoreView.vue'
 import StatsView from './views/StatsView.vue'
 
@@ -30,6 +31,7 @@ export const router = createRouter({
 
     // Открываются поверх табов, со своей кнопкой «назад»
     { path: '/day/:date', name: 'day', component: EntryView, props: true },
+    { path: '/stats/mood/:level', name: 'mood-stats', component: MoodStatsView, props: true },
     { path: '/settings/categories', name: 'categories-settings', component: CategoriesSettingsView },
     { path: '/categories/new', name: 'category-new', component: CategoryEditView },
     {

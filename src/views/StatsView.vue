@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import MoodBarChart from '../components/MoodBarChart.vue'
 import SyncStatus from '../components/SyncStatus.vue'
 import {
@@ -13,7 +14,7 @@ import {
   type Tag,
 } from '../lib/db'
 import { resolveIcon } from '../lib/icons'
-import { moodLevel } from '../lib/mood'
+import { MOOD_LEVELS, moodLevel } from '../lib/mood'
 import { useMoodColors } from '../lib/moodPalettes'
 import { moodSetEmoji, resolveMoodSet } from '../lib/moodSets'
 import {
@@ -26,6 +27,7 @@ import {
 import { bucketTagShare, tagMoodComparison } from '../lib/stats'
 import { useLiveQuery } from '../lib/useLiveQuery'
 
+const router = useRouter()
 const granularity = ref<Granularity>('day')
 const selectedKey = ref<string | null>(null)
 const selectedTagId = ref<string | null>(null)
@@ -336,6 +338,32 @@ const moodDelta = computed(() => {
         >
           {{ showAllTags ? 'Свернуть' : `Показать все (${tagCounts.length})` }}
         </button>
+      </section>
+
+      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+        <h2 class="text-sm font-medium text-neutral-700">Разбор по настроению</h2>
+        <p class="text-[11px] text-neutral-400 -mt-2">
+          Частота, самые длинные периоды и подходящие действия — отдельно по каждому настроению.
+        </p>
+        <div class="flex justify-between">
+          <button
+            v-for="level in MOOD_LEVELS"
+            :key="level.value"
+            type="button"
+            :aria-label="level.label"
+            @click="router.push(`/stats/mood/${level.value}`)"
+            class="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 active:scale-95 transition-transform"
+            :style="{ backgroundColor: colorFor(level.value) }"
+          >
+            <img
+              v-if="moodSet.images"
+              :src="moodSet.images[level.value - 1]"
+              :alt="level.label"
+              class="w-full h-full object-cover"
+            />
+            <span v-else class="text-xl leading-none">{{ moodSetEmoji(moodSet, level.value) }}</span>
+          </button>
+        </div>
       </section>
     </div>
   </main>
