@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { me } from '../lib/auth'
+import { authChecked, me } from '../lib/auth'
 import { lastSyncError, pendingCount, syncing } from '../lib/sync'
 </script>
 
 <template>
+  <!-- Пока сессия не проверена, не утверждаем ничего: проверка теперь идёт
+       фоном после mount (см. main.ts), и без этой заслонки каждый холодный
+       старт на секунду показывал бы «Войти» уже вошедшему человеку. -->
+  <span v-if="!authChecked" class="shrink-0" />
   <RouterLink
-    v-if="!me"
+    v-else-if="!me"
     to="/login"
     class="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2 text-right shrink-0"
   >

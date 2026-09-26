@@ -31,10 +31,10 @@
     <link rel="apple-touch-startup-image" href="/splash/iphone-375x667-2x.png" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
     <!-- Критический CSS: фон сразу в цвет приложения, без белой вспышки до
-         монтирования Vue. Актуально не только для Android/десктопа —
-         main.ts перед mount() ждёт checkSession()/runSync(), так что пауза
-         между открытием и монтированием реальная даже на iOS, уже поверх
-         системного сплэша. -->
+         монтирования Vue. Пауза до mount() теперь короткая и целиком
+         локальная (main.ts не ждёт сеть), но не нулевая — заглушка всё
+         равно нужна, особенно на Android/десктопе, где системного сплэша
+         нет вообще. -->
     <style>
       html, body { background: #faf9f7; margin: 0; }
       #app-loading {
