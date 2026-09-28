@@ -21,13 +21,51 @@ export function resolveAccent(id: string): Accent {
   return ACCENTS.find((a) => a.id === id) ?? ACCENTS[0]!
 }
 
+/** Ключ в localStorage — см. applyAccent, нужен только для первого кадра. */
+export const ACCENT_PAINT_CACHE_KEY = 'daylens:accent-hex'
+
 /**
  * Ставит выбранный цвет в `--accent` на корне документа. Производные
- * (`--accent-ink` под белый текст, `--accent-soft` для подложек) считаются
- * в CSS через color-mix, поэтому здесь достаточно одного значения.
+ * (`--accent-ink` под белый текст, `--accent-soft` для подложек, `--app-bg`
+ * для фона всех экранов) считаются в CSS, поэтому здесь достаточно одного
+ * значения.
  */
 export function applyAccent(id: string): void {
-  document.documentElement.style.setProperty('--accent', resolveAccent(id).hex)
+  const { hex } = resolveAccent(id)
+  document.documentElement.style.setProperty('--accent', hex)
+
+  // Дубль в localStorage — не второй источник правды, а кэш для первого
+  // кадра: настоящий выбор лежит в Dexie, но IndexedDB асинхронный и до
+  // первой отрисовки не успевает. Раньше это было незаметно (фон и так
+  // почти белый), а с пастельным фоном каждый холодный старт мигал бы
+  // нейтральным экраном. localStorage синхронный — инлайновый скрипт в
+  // index.html читает его ещё до отрисовки.
+  try {
+    localStorage.setItem(ACCENT_PAINT_CACHE_KEY, hex)
+  } catch {
+    // Приватный режим/заблокированное хранилище — не повод падать,
+    // худшее последствие тут вспышка нейтрального фона на старте.
+  }
+
+  syncThemeColor()
+}
+
+/**
+ * Цвет полосы браузера под цвет фона — иначе в Safari и Chrome по верху
+ * экрана идёт шов между бежевой полосой и пастельным фоном страницы.
+ * Значение не пересчитываем в JS, а спрашиваем у браузера — формула
+ * пастели остаётся в одном месте, в CSS. Спрашиваем именно посчитанный
+ * `background-color` элемента, а не саму переменную `--app-bg`: у
+ * кастомных свойств getPropertyValue отдаёт исходный текст, и в мету
+ * уезжала строка `oklch(from #8b5cf6 .955 min(c, .05) h)`, которую
+ * парсер меты не понимает. У background-color тот же цвет уже сведён к
+ * конкретному значению — и для oklch-ветки, и для color-mix-фоллбэка.
+ */
+function syncThemeColor(): void {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (!meta || !document.body) return
+  const bg = getComputedStyle(document.body).backgroundColor
+  if (bg) meta.content = bg
 }
 
 export async function getActiveAccentId(): Promise<string> {

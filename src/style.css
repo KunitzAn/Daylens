@@ -66,22 +66,36 @@
      белая подпись на лаймовом или голубом не читается. */
   --accent-ink: color-mix(in oklab, var(--accent) 74%, #1b1725);
   --accent-soft: color-mix(in oklab, var(--accent) 13%, #fff);
+
+  /* Фон всех экранов — пастель того же тона, что и цвет приложения.
+     Проценты от --accent тут не годятся: акценты неоновые и очень разные
+     по светлоте (лайм #b8f000 против фиолетового #8b5cf6), и одна и та же
+     доля давала бы то нежную лаванду, то ядовитый салатовый на пол-экрана.
+     Поэтому берём от акцента только тон, а светлоту и насыщенность
+     задаём сами — тот же приём, что уже используется в .mood-ambient. */
+  --app-bg: color-mix(in oklab, var(--accent) 9%, #faf9f7);
+}
+@supports (color: oklch(from red l c h)) {
+  :root {
+    --app-bg: oklch(from var(--accent) .955 min(c, .05) h);
+  }
 }
 
 body {
   margin: 0;
-  background: #faf9f7;
+  background: var(--app-bg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Фон приложения: градиентный «меш», целиком в цвете акцента из настроек —
-   меняешь цвет приложения, меняется и воздух вокруг него. Оба пятна из
-   --accent (не независимый второй цвет), поэтому фон никогда не спорит с
-   выбором пользователя. Второе пятно — аналоговый оттенок через
-   oklch(from …, h+34): даёт живой переход, а не плоскую заливку одним
-   тоном; без относительных цветов (@supports) откатывается на тот же
-   --accent, просто оба пятна совпадают по оттенку.
+/* Поверх пастельной базы (--app-bg) — градиентный «меш» из того же акцента,
+   чтобы фон не был плоской заливкой одним тоном. Оба пятна из --accent (не
+   независимый второй цвет), поэтому фон никогда не спорит с выбором
+   пользователя. Второе пятно — аналоговый оттенок через oklch(from …, h+34):
+   даёт живой переход; без относительных цветов (@supports) откатывается на
+   тот же --accent, просто оба пятна совпадают по оттенку.
+   Доли намеренно небольшие: они ложатся уже на тонированный фон, а не на
+   белый, и прежние 38/30% давали по углам грязные пятна вместо воздуха.
    Чистый CSS-градиент, без картинок и JS — при прокрутке ничего не
    перерисовывается. */
 body::before {
@@ -92,8 +106,8 @@ body::before {
   pointer-events: none;
   --mesh-2: var(--accent);
   background:
-    radial-gradient(46vmax 40vmax at 14% -4%, color-mix(in oklab, var(--accent) 38%, transparent), transparent 68%),
-    radial-gradient(38vmax 34vmax at 96% 86%, color-mix(in oklab, var(--mesh-2) 30%, transparent), transparent 70%);
+    radial-gradient(46vmax 40vmax at 14% -4%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 68%),
+    radial-gradient(38vmax 34vmax at 96% 86%, color-mix(in oklab, var(--mesh-2) 17%, transparent), transparent 70%);
 }
 @supports (color: oklch(from red l c h)) {
   body::before {

@@ -30,13 +30,35 @@
     <link rel="apple-touch-startup-image" href="/splash/iphone-414x736-3x.png" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
     <link rel="apple-touch-startup-image" href="/splash/iphone-375x667-2x.png" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
-    <!-- Критический CSS: фон сразу в цвет приложения, без белой вспышки до
-         монтирования Vue. Пауза до mount() теперь короткая и целиком
-         локальная (main.ts не ждёт сеть), но не нулевая — заглушка всё
-         равно нужна, особенно на Android/десктопе, где системного сплэша
-         нет вообще. -->
+    <!-- Цвет приложения — до первой отрисовки. Настоящий выбор лежит в
+         IndexedDB, но она асинхронная и к первому кадру не успевает, а фон
+         у нас теперь пастельный в тон акценту — без этого каждый холодный
+         старт мигал бы нейтральным экраном. localStorage синхронный, пишет
+         его lib/accents при каждой смене цвета; нет записи (первый запуск,
+         приватный режим) — остаётся дефолт из CSS. -->
+    <script>
+      try {
+        var hex = localStorage.getItem('daylens:accent-hex')
+        if (hex) document.documentElement.style.setProperty('--accent', hex)
+      } catch (e) {}
+    </script>
+
+    <!-- Критический CSS: фон сразу в цвет приложения, без вспышки до
+         монтирования Vue. Формула пастели продублирована из style.css
+         осознанно — таблица стилей подгружается отдельным файлом и к
+         первому кадру не готова, а фон нужен именно на нём. Меняешь там —
+         поменяй и тут. Пауза до mount() теперь короткая и целиком локальная
+         (main.ts не ждёт сеть), но не нулевая — заглушка всё равно нужна,
+         особенно на Android/десктопе, где системного сплэша нет вообще. -->
     <style>
-      html, body { background: #faf9f7; margin: 0; }
+      :root {
+        --accent: #8b5cf6;
+        --app-bg: color-mix(in oklab, var(--accent) 9%, #faf9f7);
+      }
+      @supports (color: oklch(from red l c h)) {
+        :root { --app-bg: oklch(from var(--accent) .955 min(c, .05) h); }
+      }
+      html, body { background: var(--app-bg); margin: 0; }
       #app-loading {
         position: fixed;
         inset: 0;
