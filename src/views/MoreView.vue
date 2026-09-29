@@ -35,7 +35,7 @@ if ('serviceWorker' in navigator) {
           v-for="link in links"
           :key="link.to"
           :to="link.to"
-          class="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-clay-1"
+          class="flex items-center gap-3 rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-1"
         >
           <component :is="link.icon" :size="18" class="text-neutral-400" />
           <span class="flex-1">{{ link.label }}</span>
@@ -47,13 +47,13 @@ if ('serviceWorker' in navigator) {
         <p class="text-sm font-medium text-neutral-500">Аккаунт</p>
 
         <template v-if="me">
-          <p class="rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-clay-1">
+          <p class="rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-1">
             {{ me.email }}
           </p>
           <button
             type="button"
             @click="logout"
-            class="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm text-red-500 shadow-clay-1"
+            class="flex items-center gap-3 rounded-2xl bg-surface p-4 text-sm text-red-500 shadow-clay-1"
           >
             <LogOut :size="18" />
             Выйти
@@ -63,7 +63,7 @@ if ('serviceWorker' in navigator) {
         <RouterLink
           v-else
           to="/login"
-          class="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-clay-1"
+          class="flex items-center gap-3 rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-1"
         >
           <span class="flex-1">Войти — синхронизация между устройствами</span>
           <ChevronRight :size="16" class="text-neutral-300" />
@@ -72,7 +72,7 @@ if ('serviceWorker' in navigator) {
 
       <section class="flex flex-col gap-2">
         <p class="text-sm font-medium text-neutral-500">Офлайн</p>
-        <div class="rounded-2xl bg-white p-4 shadow-clay-1">
+        <div class="rounded-2xl bg-surface p-4 shadow-clay-1">
           <p class="text-sm text-neutral-700">
             Работа без интернета:
             <strong :class="offlineReady ? 'text-emerald-600' : 'text-amber-600'">

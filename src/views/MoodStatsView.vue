@@ -133,7 +133,7 @@ function tickHeight(share: number | null): string {
   return share > 0 ? '100%' : '35%'
 }
 function tickColor(share: number | null): string {
-  return share !== null && share > 0 ? colorFor.value(activeLevel.value) : '#e7e5e4'
+  return share !== null && share > 0 ? colorFor.value(activeLevel.value) : 'var(--color-neutral-100)'
 }
 function tickOpacity(share: number | null): number {
   return share !== null && share > 0 ? 0.35 + share * 0.65 : 1
@@ -197,7 +197,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
           type="button"
           aria-label="Назад"
           @click="goBack"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -205,7 +205,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         <button
           type="button"
           @click="pickerOpen = true"
-          class="flex items-center gap-2 rounded-full bg-white pl-2 pr-3 py-1.5 shadow-clay-1"
+          class="flex items-center gap-2 rounded-full bg-surface pl-2 pr-3 py-1.5 shadow-clay-1"
         >
           <span
             class="w-7 h-7 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
@@ -224,7 +224,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         </button>
       </div>
 
-      <div class="flex gap-1 rounded-2xl bg-white p-1 shadow-clay-1">
+      <div class="flex gap-1 rounded-2xl bg-surface p-1 shadow-clay-1">
         <button
           v-for="option in SCALES"
           :key="option.value"
@@ -258,7 +258,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         </button>
       </div>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Частота</h2>
         <p v-if="statsWindow.dates.length === 0" class="text-sm text-neutral-400">Данных за этот период нет.</p>
         <template v-else>
@@ -287,7 +287,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         </template>
       </section>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Самый длинный период</h2>
         <p v-if="runs.withLevel.days === 0 && runs.withoutLevel.days === 0" class="text-sm text-neutral-400">
           Данных за этот период нет.
@@ -310,7 +310,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         </div>
       </section>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Соответствующие действия</h2>
         <p v-if="affinityRows.length === 0" class="text-sm text-neutral-400">
           За этот период с этим настроением ничего не отмечено.
@@ -341,7 +341,7 @@ const visibleDays = computed(() => (showAllDays.value ? daysWithMood.value : day
         </button>
       </section>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Дни</h2>
         <p v-if="daysWithMood.length === 0" class="text-sm text-neutral-400">За этот период такого настроения не было.</p>
         <div v-else class="flex flex-wrap gap-2">

@@ -38,7 +38,7 @@ async function remove(palette: MoodPalette) {
         <button
           type="button"
           @click="router.push('/more')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -50,7 +50,7 @@ async function remove(palette: MoodPalette) {
         <div
           v-for="palette in SYSTEM_PALETTES"
           :key="palette.id"
-          class="rounded-2xl bg-white p-4 flex flex-col gap-3 transition-shadow"
+          class="rounded-2xl bg-surface p-4 flex flex-col gap-3 transition-shadow"
           :class="
             activeId === palette.id
               ? 'shadow-[0_0_0_2px_#a78bfa]'
@@ -95,7 +95,7 @@ async function remove(palette: MoodPalette) {
         <div
           v-for="palette in customPalettes"
           :key="palette.id"
-          class="rounded-2xl bg-white p-4 flex flex-col gap-3 transition-shadow"
+          class="rounded-2xl bg-surface p-4 flex flex-col gap-3 transition-shadow"
           :class="
             activeId === palette.id
               ? 'shadow-[0_0_0_2px_#a78bfa]'

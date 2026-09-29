@@ -34,7 +34,7 @@ async function remove(set: MoodEmojiSet) {
         <button
           type="button"
           @click="router.push('/more')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -47,7 +47,7 @@ async function remove(set: MoodEmojiSet) {
         <div
           v-for="set in MOOD_SETS"
           :key="set.id"
-          class="rounded-card bg-white p-4 flex flex-col gap-3 transition-shadow"
+          class="rounded-card bg-surface p-4 flex flex-col gap-3 transition-shadow"
           :class="activeId === set.id ? 'shadow-[0_0_0_2px_var(--accent-ink)]' : 'shadow-clay-1'"
         >
           <div class="flex items-center gap-2">
@@ -101,7 +101,7 @@ async function remove(set: MoodEmojiSet) {
         <div
           v-for="set in customSets"
           :key="set.id"
-          class="rounded-card bg-white p-4 flex flex-col gap-3 transition-shadow"
+          class="rounded-card bg-surface p-4 flex flex-col gap-3 transition-shadow"
           :class="activeId === set.id ? 'shadow-[0_0_0_2px_var(--accent-ink)]' : 'shadow-clay-1'"
         >
           <div class="flex items-center gap-2">

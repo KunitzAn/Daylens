@@ -21,7 +21,7 @@ const activeId = useLiveQuery<string>(
           type="button"
           aria-label="Назад"
           @click="router.push('/more')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-2 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-2 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -53,7 +53,7 @@ const activeId = useLiveQuery<string>(
         </button>
       </div>
 
-      <div class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <div class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <p class="text-sm font-semibold text-neutral-700">Как это выглядит</p>
 
         <div class="flex items-center gap-3">

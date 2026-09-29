@@ -11,9 +11,9 @@ const { colorFor } = useMoodColors()
 
 <template>
   <div class="fixed inset-0 z-50 flex items-end justify-center">
-    <div class="absolute inset-0 bg-black/30" @click="emit('close')" />
+    <div class="absolute inset-0 bg-[color:var(--scrim)]" @click="emit('close')" />
 
-    <div class="relative w-full max-w-md rounded-t-3xl bg-[#faf9f7] px-4 pt-5 pb-8 flex flex-col gap-2 shadow-clay-3">
+    <div class="relative w-full max-w-md rounded-t-3xl bg-sheet px-4 pt-5 pb-8 flex flex-col gap-2 shadow-clay-3">
       <h2 class="text-base font-semibold text-neutral-800 mb-1">Какое настроение?</h2>
 
       <button
@@ -21,7 +21,7 @@ const { colorFor } = useMoodColors()
         :key="level.value"
         type="button"
         @click="emit('pick', level.value)"
-        class="rounded-2xl bg-white px-3 py-2 flex items-center gap-3 text-left shadow-clay-1 transition-shadow"
+        class="rounded-2xl bg-surface px-3 py-2 flex items-center gap-3 text-left shadow-clay-1 transition-shadow"
         :class="props.activeLevel === level.value ? 'shadow-[0_0_0_2px_var(--accent-ink)]' : ''"
       >
         <span

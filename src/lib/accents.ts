@@ -62,10 +62,26 @@ export function applyAccent(id: string): void {
  * конкретному значению — и для oklch-ветки, и для color-mix-фоллбэка.
  */
 function syncThemeColor(): void {
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-  if (!meta || !document.body) return
+  if (!document.body) return
   const bg = getComputedStyle(document.body).backgroundColor
-  if (bg) meta.content = bg
+  if (!bg) return
+  // Тегов два — под светлую и тёмную схему, они нужны на кадр до JS.
+  // Дальше схему уже определил браузер, и посчитанный фон верен для
+  // действующей; проставляем его в оба, иначе обновлённым оказался бы
+  // первый попавшийся, а применялся — другой.
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+    meta.content = bg
+  })
+}
+
+/**
+ * Тёмная тема идёт за системной настройкой и переключается без перезагрузки —
+ * сам фон это делает средствами CSS, а вот `theme-color` живёт в <meta> и
+ * сам по себе не пересчитается. Без этого при переключении темы на телефоне
+ * полоса браузера осталась бы от прежней темы.
+ */
+export function watchColorScheme(): void {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor)
 }
 
 export async function getActiveAccentId(): Promise<string> {

@@ -56,9 +56,23 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+
+  /* Плоскости интерфейса. Раньше карточки были буквально `bg-surface`, но в
+     тёмной теме белому взяться неоткуда — а `text-white` на кнопках должен
+     остаться настоящим белым, так что переопределить `--color-white` было
+     нельзя. Отсюда отдельные токены: `bg-surface` — карточка, `bg-sheet` —
+     нижняя шторка (у неё свой план, она лежит поверх затемнения). */
+  --color-surface: var(--surface);
+  --color-sheet: var(--sheet);
 }
 
 :root {
+  /* Нативные контролы — выбор даты в шторке «за какой день», скроллбары,
+     поля ввода — рисует система, и без этой строки они оставались бы
+     светлыми на тёмной теме: чужой белый календарик поверх тёмной шторки.
+     Обе темы перечислены, потому что сами мы идём за системной. */
+  color-scheme: light dark;
+
   /* Цвет приложения. Значение подменяется на лету из настроек (см. lib/accents),
      поэтому живёт обычной переменной, а не константой в @theme. */
   --accent: #8b5cf6;
@@ -74,10 +88,110 @@
      Поэтому берём от акцента только тон, а светлоту и насыщенность
      задаём сами — тот же приём, что уже используется в .mood-ambient. */
   --app-bg: color-mix(in oklab, var(--accent) 9%, #faf9f7);
+  --surface: #ffffff;
+  --sheet: #faf9f7;
+  /* Основа для .tint-day — плоскость, в которую подмешивается цвет дня. */
+  --tint-base: #ffffff;
+  --tint-amount: 16%;
+  /* Обводка цветной метки (столбик графика) от плоскости под ней. Нужна на
+     обоих концах шкалы, но с разных сторон: на светлой карточке пропадает
+     почти белая нейтраль, на тёмной — тёмные края палитры. */
+  --mark-edge: rgba(0, 0, 0, .07);
+  /* Затемнение под нижними шторками. */
+  --scrim: rgba(0, 0, 0, .3);
 }
 @supports (color: oklch(from red l c h)) {
   :root {
     --app-bg: oklch(from var(--accent) .955 min(c, .05) h);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Тёмная тема. Идёт строго за системной настройкой телефона
+   (`prefers-color-scheme`), своего переключателя нет: на iOS «тема внутри
+   приложения» почти всегда воспринимается как баг, если она разошлась с
+   системной. Добавить ручной выбор потом — это подменить условие на
+   атрибут на <html>, остальное готово.
+
+   Всё считается от того же --accent, что и светлая тема, поэтому выбранная
+   расцветка никуда не девается: в тёмной она уходит в тон фона, подложек и
+   даже «серого» текста — честно нейтральной серой шкалы здесь нет, у всех
+   ступеней есть немного хромы в тоне акцента, иначе рядом с цветным фоном
+   они выглядят грязными.
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-bg: color-mix(in oklab, var(--accent) 14%, #14131a);
+    --surface: color-mix(in oklab, var(--accent) 11%, #1e1d26);
+    --sheet: color-mix(in oklab, var(--accent) 12%, #24222d);
+    --tint-base: color-mix(in oklab, var(--accent) 11%, #1e1d26);
+    --tint-amount: 26%;
+    --mark-edge: rgba(255, 255, 255, .14);
+    /* Шторка на тёмном сама тёмная — без более плотного затемнения она не
+       отделяется от экрана под ней. */
+    --scrim: rgba(0, 0, 0, .58);
+
+    /* Под белый текст в тёмной теме акцент затемняем меньше, чем в светлой
+       (74%): на тёмном фоне приглушённая заливка сливается с карточкой.
+       Совсем не затемнять нельзя — на лайме и мятном белая подпись не
+       читается ни при какой теме, ради чего --accent-ink и существует. */
+    --accent-ink: color-mix(in oklab, var(--accent) 84%, #1b1725);
+    --accent-soft: color-mix(in oklab, var(--accent) 22%, #1e1d26);
+
+    /* Шкала «нейтральных» переворачивается: в светлой теме младшие номера —
+       подложки, старшие — текст, в тёмной наоборот. Зеркалить светлоту
+       буквально (L → 100−L) нельзя: 50 ушла бы в почти чёрный, неотличимый
+       от карточки, а 800 — в тусклый серый вместо заголовка. Поэтому ступени
+       подобраны руками, с запасом контраста на обоих концах. */
+    --color-neutral-50: color-mix(in oklab, var(--accent) 10%, #2a2833);
+    --color-neutral-100: color-mix(in oklab, var(--accent) 10%, #322f3c);
+    --color-neutral-300: color-mix(in oklab, var(--accent) 12%, #565263);
+    --color-neutral-400: color-mix(in oklab, var(--accent) 12%, #8d8899);
+    --color-neutral-500: color-mix(in oklab, var(--accent) 10%, #aba6b6);
+    --color-neutral-600: color-mix(in oklab, var(--accent) 8%, #c9c5d1);
+    --color-neutral-700: color-mix(in oklab, var(--accent) 6%, #e0dde6);
+    --color-neutral-800: color-mix(in oklab, var(--accent) 5%, #f1eff4);
+
+    /* Пластилин на тёмном — это не та же тень с другой прозрачностью.
+       Белый внутренний блик приходится почти убирать (на тёмной пластике
+       он читается как царапина), а работу «выпуклости» берёт на себя
+       внешняя тень, которой нужно заметно больше, чем на светлом. */
+    --shadow-clay-1:
+      0 1px 2px rgba(0, 0, 0, .3),
+      0 10px 22px -10px rgba(0, 0, 0, .55),
+      inset 0 1px 0 rgba(255, 255, 255, .07),
+      inset 0 -3px 6px rgba(0, 0, 0, .25);
+    --shadow-clay-2:
+      0 2px 5px rgba(0, 0, 0, .34),
+      0 12px 20px -8px rgba(0, 0, 0, .6),
+      inset 0 1px 0 rgba(255, 255, 255, .09),
+      inset 0 -4px 8px rgba(0, 0, 0, .3);
+    --shadow-clay-3:
+      0 4px 10px rgba(0, 0, 0, .4),
+      0 18px 32px -10px rgba(0, 0, 0, .7),
+      inset 0 1px 0 rgba(255, 255, 255, .1),
+      inset 0 -5px 10px rgba(0, 0, 0, .34);
+    --shadow-clay-in:
+      inset 0 4px 9px rgba(0, 0, 0, .5),
+      inset 0 -1px 0 rgba(255, 255, 255, .06);
+  }
+
+  @supports (color: oklch(from red l c h)) {
+    :root {
+      --app-bg: oklch(from var(--accent) .17 min(c, .04) h);
+      --surface: oklch(from var(--accent) .235 min(c, .032) h);
+      --sheet: oklch(from var(--accent) .275 min(c, .032) h);
+      --tint-base: oklch(from var(--accent) .235 min(c, .032) h);
+
+      --color-neutral-50: oklch(from var(--accent) .29 min(c, .016) h);
+      --color-neutral-100: oklch(from var(--accent) .335 min(c, .018) h);
+      --color-neutral-300: oklch(from var(--accent) .47 min(c, .022) h);
+      --color-neutral-400: oklch(from var(--accent) .62 min(c, .024) h);
+      --color-neutral-500: oklch(from var(--accent) .72 min(c, .022) h);
+      --color-neutral-600: oklch(from var(--accent) .82 min(c, .018) h);
+      --color-neutral-700: oklch(from var(--accent) .89 min(c, .015) h);
+      --color-neutral-800: oklch(from var(--accent) .95 min(c, .012) h);
+    }
   }
 }
 
@@ -112,6 +226,16 @@ body::before {
 @supports (color: oklch(from red l c h)) {
   body::before {
     --mesh-2: oklch(from var(--accent) l c calc(h + 34));
+  }
+}
+@media (prefers-color-scheme: dark) {
+  /* На тёмном фоне те же доли неона дают не воздух, а два светящихся пятна:
+     подмешивается-то он в прозрачность, а не в белое. Убираем силу почти
+     вдвое — рисунок остаётся, свечение уходит. */
+  body::before {
+    background:
+      radial-gradient(46vmax 40vmax at 14% -4%, color-mix(in oklab, var(--accent) 13%, transparent), transparent 68%),
+      radial-gradient(38vmax 34vmax at 96% 86%, color-mix(in oklab, var(--mesh-2) 10%, transparent), transparent 70%);
   }
 }
 
@@ -157,6 +281,19 @@ body::before {
     --wash: oklch(from var(--c) .9 min(c, .13) h / .8);
   }
 }
+@media (prefers-color-scheme: dark) {
+  /* Та же нормализация, но в другую сторону: на тёмном экране светлота .9
+     даёт не «воздух», а слепящее пятно наверху. Опускаем её ниже фона по
+     контрасту и добавляем хромы — на тёмном цвет читается хуже. */
+  .mood-ambient {
+    --wash: color-mix(in oklab, var(--c) 28%, transparent);
+  }
+  @supports (color: oklch(from red l c h)) {
+    .mood-ambient {
+      --wash: oklch(from var(--c) .42 min(c, .15) h / .55);
+    }
+  }
+}
 
 /* Главное действие экрана — тот же неон, что у «+». */
 .btn-primary {
@@ -167,9 +304,12 @@ body::before {
 }
 
 /* Карточка дня в цвете настроения: заливка слабая, чтобы заметка осталась
-   тёмной на светлом — она главный текст ленты и красить её нельзя. */
+   читаемой — она главный текст ленты и красить её нельзя. Подмешиваем не в
+   белый, а в плоскость карточки (--tint-base): в тёмной теме белого под
+   ней нет. Доли там больше (26% против 16%): на тёмной основе тот же
+   процент цвета почти не виден. */
 .tint-day {
-  background: color-mix(in oklab, var(--c) 16%, #ffffff);
+  background: color-mix(in oklab, var(--c) var(--tint-amount), var(--tint-base));
 }
 
 /* Единственное место со стеклом — плавающий таб-бар над лентой. */
@@ -177,6 +317,13 @@ body::before {
   background: color-mix(in srgb, #ffffff 68%, transparent);
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+@media (prefers-color-scheme: dark) {
+  /* Матовое стекло на тёмном: подложка не осветляет, а затемняет то, что
+     под ней, иначе лента просвечивает сквозь таб-бар светлым пятном. */
+  .glass {
+    background: color-mix(in srgb, var(--sheet) 72%, transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

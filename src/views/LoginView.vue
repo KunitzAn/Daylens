@@ -60,7 +60,7 @@ async function resend() {
         <button
           type="button"
           @click="router.push('/')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -78,7 +78,7 @@ async function resend() {
           placeholder="you@example.com"
           autocomplete="email"
           @keyup.enter="submitEmail"
-          class="rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+          class="rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
         />
         <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
         <button
@@ -92,7 +92,7 @@ async function resend() {
       </template>
 
       <template v-else>
-        <p class="text-sm text-neutral-600 bg-white rounded-2xl p-4 shadow-clay-1">
+        <p class="text-sm text-neutral-600 bg-surface rounded-2xl p-4 shadow-clay-1">
           Отправили код на <strong>{{ email }}</strong> — введите его ниже, действует 15 минут.
         </p>
         <input
@@ -104,7 +104,7 @@ async function resend() {
           placeholder="000000"
           autocomplete="one-time-code"
           @keyup.enter="submitCode"
-          class="rounded-2xl bg-white p-3 text-2xl text-center tracking-[0.3em] text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+          class="rounded-2xl bg-surface p-3 text-2xl text-center tracking-[0.3em] text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
         />
         <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
         <button

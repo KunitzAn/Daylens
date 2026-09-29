@@ -71,7 +71,7 @@ async function remove() {
         <button
           type="button"
           @click="router.push('/mood-palettes')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -86,7 +86,7 @@ async function remove() {
           v-model="name"
           type="text"
           placeholder="Например, Мягкая"
-          class="rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+          class="rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
@@ -95,7 +95,7 @@ async function remove() {
         <div
           v-for="(level, i) in MOOD_LEVELS"
           :key="level.value"
-          class="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-clay-1"
+          class="flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-clay-1"
         >
           <span class="text-xl w-7 text-center shrink-0">{{ level.emoji }}</span>
           <span class="flex-1 text-sm text-neutral-600 truncate">{{ level.label }}</span>
@@ -109,7 +109,7 @@ async function remove() {
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-4 flex items-center gap-2 shadow-clay-1">
+      <div class="rounded-2xl bg-surface p-4 flex items-center gap-2 shadow-clay-1">
         <span class="text-xs text-neutral-400">Хуже</span>
         <span
           v-for="(color, i) in colors"
@@ -133,7 +133,7 @@ async function remove() {
         v-if="!isNew"
         type="button"
         @click="remove"
-        class="w-full rounded-2xl py-3 text-red-500 font-medium bg-white shadow-clay-1"
+        class="w-full rounded-2xl py-3 text-red-500 font-medium bg-surface shadow-clay-1"
       >
         Удалить палитру
       </button>

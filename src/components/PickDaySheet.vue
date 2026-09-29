@@ -24,10 +24,10 @@ function pickChosen() {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-end justify-center">
-    <div class="absolute inset-0 bg-black/30" @click="emit('close')" />
+    <div class="absolute inset-0 bg-[color:var(--scrim)]" @click="emit('close')" />
 
     <div
-      class="relative w-full max-w-md rounded-t-3xl bg-[#faf9f7] px-4 pt-5 pb-8 flex flex-col gap-3 shadow-clay-3"
+      class="relative w-full max-w-md rounded-t-3xl bg-sheet px-4 pt-5 pb-8 flex flex-col gap-3 shadow-clay-3"
     >
       <h2 class="text-base font-semibold text-neutral-800">За какой день?</h2>
 
@@ -36,7 +36,7 @@ function pickChosen() {
         :key="day.date"
         type="button"
         @click="emit('pick', day.date)"
-        class="rounded-2xl bg-white px-4 py-3 flex items-center justify-between gap-3 text-left shadow-clay-1"
+        class="rounded-2xl bg-surface px-4 py-3 flex items-center justify-between gap-3 text-left shadow-clay-1"
       >
         <span class="text-sm font-medium text-neutral-700">{{ day.label }}</span>
         <span class="text-xs text-neutral-400">
@@ -44,7 +44,7 @@ function pickChosen() {
         </span>
       </button>
 
-      <label class="rounded-2xl bg-white px-4 py-3 flex items-center justify-between gap-3 shadow-clay-1">
+      <label class="rounded-2xl bg-surface px-4 py-3 flex items-center justify-between gap-3 shadow-clay-1">
         <span class="text-sm font-medium text-neutral-700">Другой день</span>
         <input
           v-model="chosen"

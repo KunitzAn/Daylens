@@ -34,7 +34,7 @@ function pick(name: string) {
     <button
       type="button"
       @click="open = !open"
-      class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 bg-white"
+      class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 bg-surface"
       :style="{ borderColor: color ?? '#a78bfa', color: color ?? '#a78bfa' }"
     >
       <component :is="resolveIcon(modelValue)" :size="22" />
@@ -43,7 +43,7 @@ function pick(name: string) {
     <template v-if="open">
       <div class="fixed inset-0 z-40" @click="open = false" />
       <div
-        class="absolute z-50 mt-2 w-72 p-3 bg-white rounded-2xl shadow-clay-3 flex flex-col gap-2"
+        class="absolute z-50 mt-2 w-72 p-3 bg-surface rounded-2xl shadow-clay-3 flex flex-col gap-2"
       >
         <input
           v-model="query"
@@ -55,7 +55,7 @@ function pick(name: string) {
 
         <div class="max-h-64 overflow-y-auto flex flex-col gap-2">
           <section v-for="group in filteredGroups" :key="group.label" class="flex flex-col gap-1">
-            <h3 class="text-[11px] text-neutral-400 sticky top-0 bg-white py-1">{{ group.label }}</h3>
+            <h3 class="text-[11px] text-neutral-400 sticky top-0 bg-surface py-1">{{ group.label }}</h3>
             <div class="grid grid-cols-6 gap-2">
               <button
                 v-for="name in group.names"
@@ -66,7 +66,7 @@ function pick(name: string) {
                 class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-neutral-100"
                 :class="name === modelValue ? 'bg-neutral-100' : ''"
               >
-                <component :is="resolveIcon(name)" :size="18" :style="{ color: color ?? '#525252' }" />
+                <component :is="resolveIcon(name)" :size="18" :style="{ color: color ?? 'var(--color-neutral-500)' }" />
               </button>
             </div>
           </section>

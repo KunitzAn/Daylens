@@ -104,7 +104,7 @@ async function deleteCategory() {
         <button
           type="button"
           @click="router.push('/settings/categories')"
-          class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0"
+          class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0"
         >
           <ArrowLeft :size="20" class="text-neutral-600" />
         </button>
@@ -119,7 +119,7 @@ async function deleteCategory() {
           v-model="name"
           type="text"
           placeholder="Например, Сон"
-          class="rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+          class="rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
@@ -140,7 +140,7 @@ async function deleteCategory() {
             v-model="tag.name"
             type="text"
             placeholder="Название действия"
-            class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+            class="flex-1 min-w-0 rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
           />
           <button
             type="button"
@@ -173,7 +173,7 @@ async function deleteCategory() {
         v-if="!isNew"
         type="button"
         @click="deleteCategory"
-        class="w-full rounded-2xl py-3 text-red-500 font-medium bg-white shadow-clay-1"
+        class="w-full rounded-2xl py-3 text-red-500 font-medium bg-surface shadow-clay-1"
       >
         Удалить раздел
       </button>

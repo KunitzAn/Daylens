@@ -64,7 +64,7 @@ const ambientColor = computed(() => (mood.value === null ? null : colorFor.value
  */
 function moodTileFill(level: number): string {
   const isSelected = mood.value === level
-  return isSelected && !activeMoodSet.value.images ? colorFor.value(level) : '#ffffff'
+  return isSelected && !activeMoodSet.value.images ? colorFor.value(level) : 'var(--surface)'
 }
 
 async function loadEntry(date: string) {
@@ -330,7 +330,7 @@ async function save() {
               class="tone w-14 h-14 shrink-0 rounded-full flex items-center justify-center transition-all duration-150"
               :style="{
                 '--c': category.color,
-                backgroundColor: selectedTagIds.includes(tag.id) ? category.color : '#ffffff',
+                backgroundColor: selectedTagIds.includes(tag.id) ? category.color : 'var(--surface)',
               }"
               :class="[
                 selectedTagIds.includes(tag.id)
@@ -381,7 +381,7 @@ async function save() {
             type="text"
             placeholder="Название действия"
             @keyup.enter="saveNewTag(category.id)"
-            class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+            class="flex-1 min-w-0 rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
           />
           <button
             type="button"
@@ -409,7 +409,7 @@ async function save() {
       v-model="note"
       placeholder="Заметка (необязательно)"
       rows="3"
-      class="w-full rounded-2xl bg-white p-4 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent resize-none"
+      class="w-full rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent resize-none"
     />
 
     <button
@@ -426,9 +426,9 @@ async function save() {
          экрана записи: правишь тег в моменте, не теряя, что уже заполнил. -->
     <Teleport to="body">
       <div v-if="editingTag" class="fixed inset-0 z-50 flex items-end justify-center">
-        <div class="absolute inset-0 bg-black/30" @click="closeEditTag" />
+        <div class="absolute inset-0 bg-[color:var(--scrim)]" @click="closeEditTag" />
         <div
-          class="relative w-full max-w-md rounded-t-card bg-[#faf9f7] px-5 pt-5 pb-8 flex flex-col gap-4 shadow-clay-3"
+          class="relative w-full max-w-md rounded-t-card bg-sheet px-5 pt-5 pb-8 flex flex-col gap-4 shadow-clay-3"
         >
           <h2 class="text-base font-bold text-neutral-800">Действие</h2>
 
@@ -439,7 +439,7 @@ async function save() {
               type="text"
               placeholder="Название действия"
               @keyup.enter="saveEditedTag"
-              class="flex-1 min-w-0 rounded-2xl bg-white p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
+              class="flex-1 min-w-0 rounded-2xl bg-surface p-3 text-sm text-neutral-700 shadow-clay-in outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
@@ -454,7 +454,7 @@ async function save() {
           <button
             type="button"
             @click="archiveEditedTag"
-            class="w-full rounded-2xl py-3 text-red-500 font-medium bg-white shadow-clay-1"
+            class="w-full rounded-2xl py-3 text-red-500 font-medium bg-surface shadow-clay-1"
           >
             Скрыть действие
           </button>

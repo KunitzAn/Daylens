@@ -33,7 +33,7 @@ function goBack() {
         type="button"
         aria-label="Назад"
         @click="goBack"
-        class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-clay-1 shrink-0 self-start"
+        class="w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-clay-1 shrink-0 self-start"
       >
         <ArrowLeft :size="20" class="text-neutral-600" />
       </button>

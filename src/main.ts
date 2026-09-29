@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import { applyAccent, getActiveAccentId } from './lib/accents'
+import { applyAccent, getActiveAccentId, watchColorScheme } from './lib/accents'
 import { ensureDefaultCategoriesSeeded } from './lib/db'
 import { installErrorOverlay, showError } from './lib/errorOverlay'
 import { router } from './router'
@@ -26,6 +26,7 @@ async function bootstrap() {
     await ensureDefaultCategoriesSeeded()
     // Цвет приложения — до монтирования, иначе первый кадр мигнёт дефолтным.
     applyAccent(await getActiveAccentId())
+    watchColorScheme()
   } catch (err) {
     // Локальная подготовка не должна мешать показать приложение: лучше
     // дневник с дефолтным цветом и плашкой ошибки, чем белый экран.

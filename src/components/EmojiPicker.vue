@@ -18,14 +18,14 @@ function pick(emoji: string) {
     <button
       type="button"
       @click="open = !open"
-      class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-accent bg-white text-2xl"
+      class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-accent bg-surface text-2xl"
     >
       {{ modelValue }}
     </button>
 
     <template v-if="open">
       <div class="fixed inset-0 z-40" @click="open = false" />
-      <div class="absolute z-50 mt-2 w-72 p-3 bg-white rounded-2xl shadow-clay-3">
+      <div class="absolute z-50 mt-2 w-72 p-3 bg-surface rounded-2xl shadow-clay-3">
         <div class="max-h-64 overflow-y-auto grid grid-cols-8 gap-1">
           <button
             v-for="emoji in MOOD_EMOJI_CATALOG"

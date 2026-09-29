@@ -69,7 +69,7 @@ function open(date: string) {
         <SyncStatus />
       </header>
 
-      <div class="rounded-card bg-white p-4 flex flex-col gap-4 shadow-clay-1">
+      <div class="rounded-card bg-surface p-4 flex flex-col gap-4 shadow-clay-1">
         <div class="flex items-center justify-between">
           <button
             type="button"
@@ -105,7 +105,7 @@ function open(date: string) {
               @click="open(cell.date)"
               class="tone aspect-square rounded-xl flex items-center justify-center text-sm transition-transform disabled:opacity-30 active:scale-95"
               :class="[
-                cellColor(cell.date) ? 'font-bold shadow-clay-1' : 'text-neutral-400 bg-white/70 shadow-clay-1',
+                cellColor(cell.date) ? 'font-bold shadow-clay-1' : 'text-neutral-400 bg-surface/70 shadow-clay-1',
                 cell.date === today ? 'ring-2 ring-accent-ink ring-offset-2 ring-offset-white' : '',
               ]"
               :style="
@@ -124,7 +124,7 @@ function open(date: string) {
         </div>
       </div>
 
-      <div class="rounded-card bg-white p-4 flex flex-wrap items-center gap-x-3 gap-y-2 shadow-clay-1">
+      <div class="rounded-card bg-surface p-4 flex flex-wrap items-center gap-x-3 gap-y-2 shadow-clay-1">
         <span class="text-xs text-neutral-400">Хуже</span>
         <span
           v-for="level in [1, 2, 3, 4, 5, 6, 7]"

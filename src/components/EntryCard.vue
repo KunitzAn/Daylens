@@ -51,7 +51,7 @@ const entryTags = computed(() =>
     <header class="flex items-center gap-3 pr-8">
       <span
         class="halo w-12 h-12 rounded-tile overflow-hidden flex items-center justify-center text-2xl shrink-0"
-        :style="{ backgroundColor: moodImage ? '#ffffff' : moodColor }"
+        :style="{ backgroundColor: moodImage ? 'var(--surface)' : moodColor }"
       >
         <img v-if="moodImage" :src="moodImage" :alt="mood?.label" class="w-full h-full object-cover" />
         <template v-else>{{ moodEmoji }}</template>

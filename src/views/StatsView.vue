@@ -206,7 +206,7 @@ const moodDelta = computed(() => {
         <SyncStatus />
       </header>
 
-      <div class="flex gap-1 rounded-2xl bg-white p-1 shadow-clay-1">
+      <div class="flex gap-1 rounded-2xl bg-surface p-1 shadow-clay-1">
         <button
           v-for="option in GRANULARITIES"
           :key="option.value"
@@ -226,14 +226,14 @@ const moodDelta = computed(() => {
           type="button"
           aria-label="Показать весь диапазон"
           @click="selectedKey = null"
-          class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
+          class="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
         >
           <X :size="13" />
         </button>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
-        <div class="rounded-card bg-white p-4 flex flex-col gap-2 shadow-clay-1">
+        <div class="rounded-card bg-surface p-4 flex flex-col gap-2 shadow-clay-1">
           <p class="text-xs text-neutral-400">Среднее настроение</p>
           <p v-if="focusLevel === null" class="text-lg text-neutral-300">—</p>
           <template v-else>
@@ -253,7 +253,7 @@ const moodDelta = computed(() => {
           </template>
         </div>
 
-        <div class="rounded-card bg-white p-4 flex flex-col gap-2 shadow-clay-1">
+        <div class="rounded-card bg-surface p-4 flex flex-col gap-2 shadow-clay-1">
           <p class="text-xs text-neutral-400">Заполнено дней</p>
           <p class="text-2xl font-semibold text-neutral-700">
             {{ focusStats.filled }}<span class="text-base text-neutral-400">/{{ focusStats.total }}</span>
@@ -261,7 +261,7 @@ const moodDelta = computed(() => {
         </div>
       </div>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-sm font-medium text-neutral-700">
             {{ GRANULARITIES.find((g) => g.value === granularity)?.chartTitle }}
@@ -278,7 +278,7 @@ const moodDelta = computed(() => {
               type="button"
               aria-label="Убрать фильтр по действию"
               @click="selectedTagId = null"
-              class="w-5 h-5 rounded-full bg-white flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
+              class="w-5 h-5 rounded-full bg-surface flex items-center justify-center text-neutral-400 shrink-0 shadow-clay-1"
             >
               <X :size="11" />
             </button>
@@ -299,7 +299,7 @@ const moodDelta = computed(() => {
         </p>
       </section>
 
-      <section v-if="selectedTag && comparisonRows" class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section v-if="selectedTag && comparisonRows" class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Настроение с «{{ selectedTag.name }}» и без</h2>
         <div class="grid grid-cols-2 gap-3">
           <div v-for="row in comparisonRows" :key="row.key" class="flex flex-col gap-2">
@@ -326,7 +326,7 @@ const moodDelta = computed(() => {
         </p>
       </section>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Действия за период</h2>
 
         <div v-if="availableFilterCategories.length > 1" class="flex gap-1.5 overflow-x-auto -mx-1 px-1">
@@ -420,7 +420,7 @@ const moodDelta = computed(() => {
         </p>
       </section>
 
-      <section class="rounded-card bg-white p-4 flex flex-col gap-3 shadow-clay-1">
+      <section class="rounded-card bg-surface p-4 flex flex-col gap-3 shadow-clay-1">
         <h2 class="text-sm font-medium text-neutral-700">Разбор по настроению</h2>
         <p class="text-[11px] text-neutral-400 -mt-2">
           Частота, самые длинные периоды и подходящие действия — отдельно по каждому настроению.

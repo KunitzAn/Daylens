@@ -12,7 +12,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const markPng = path.join(__dirname, '..', 'public', 'apple-touch-icon.png')
 const outDir = path.join(__dirname, '..', 'public', 'splash')
 
-const BG = '#faf9f7' // = manifest background_color / theme_color
+// Два набора: iOS умеет выбирать сплэш по prefers-color-scheme, и без
+// тёмного холодный запуск с системной тёмной темой вспыхивал бы белым
+// экраном на всю секунду до монтирования Vue. Цвета фиксированные,
+// нейтральные по тону: сплэш собирается на сборке, а цвет приложения
+// пользователь выбирает в рантайме — привязать одно к другому нельзя.
+const THEMES = [
+  { suffix: '', bg: '#faf9f7', media: '' },
+  { suffix: '-dark', bg: '#16151c', media: ' and (prefers-color-scheme: dark)' },
+]
 
 // device-width x device-height (CSS px, portrait) + DPR — актуальный модельный
 // ряд iPhone плюс более старые размеры, которые ещё встречаются.
@@ -52,18 +60,29 @@ for (const d of devices) {
   const markSize = Math.round(markPx * d.dpr)
   const mark = await roundedMark(markSize)
 
-  await sharp({
-    create: { width: w, height: h, channels: 4, background: BG },
-  })
-    .composite([{ input: mark, gravity: 'center' }])
-    .png()
-    .toFile(path.join(outDir, `${d.name}.png`))
+  for (const theme of THEMES) {
+    const file = `${d.name}${theme.suffix}.png`
 
-  console.log('generated', `${d.name}.png`, `${w}x${h}`)
+    await sharp({
+      create: { width: w, height: h, channels: 4, background: theme.bg },
+    })
+      .composite([{ input: mark, gravity: 'center' }])
+      // Палитра в 256 цветов: сплэш — это заливка одним тоном плюс марка,
+      // цветов там и близко не 16 миллионов. Даёт втрое меньший файл
+      // (447 → 155 КБ на 3x), на глаз от полноцветного неотличимо —
+      // сравнивал кропом по самой марке, а не по однотонному фону.
+      .png({ palette: true, compressionLevel: 9 })
+      .toFile(path.join(outDir, file))
 
-  linkTags.push(
-    `<link rel="apple-touch-startup-image" href="/splash/${d.name}.png" media="screen and (device-width: ${d.width}px) and (device-height: ${d.height}px) and (-webkit-device-pixel-ratio: ${d.dpr}) and (orientation: portrait)">`,
-  )
+    console.log('generated', file, `${w}x${h}`)
+
+    // Тёмный вариант обязан идти ПЕРВЫМ среди двух для одного устройства:
+    // media у светлого не содержит prefers-color-scheme, то есть подходит
+    // под обе темы, и Safari берёт первый подходящий тег.
+    linkTags[theme.suffix ? 'unshift' : 'push'](
+      `<link rel="apple-touch-startup-image" href="/splash/${file}" media="screen and (device-width: ${d.width}px) and (device-height: ${d.height}px) and (-webkit-device-pixel-ratio: ${d.dpr})${theme.media} and (orientation: portrait)">`,
+    )
+  }
 }
 
 console.log('\n--- вставить в index.html ---\n')

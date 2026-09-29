@@ -68,7 +68,7 @@ async function removeEntry(entry: Entry) {
 
       <p
         v-if="entries.length === 0"
-        class="text-sm text-neutral-500 bg-white rounded-card p-6 text-center"
+        class="text-sm text-neutral-500 bg-surface rounded-card p-6 text-center"
       >
         Записей пока нет. Нажмите «+», чтобы выбрать день и записать.
       </p>
@@ -88,7 +88,7 @@ async function removeEntry(entry: Entry) {
         v-if="hasMore"
         type="button"
         @click="limit += PAGE_SIZE"
-        class="rounded-2xl bg-white py-3 text-sm text-neutral-500 shadow-clay-1"
+        class="rounded-2xl bg-surface py-3 text-sm text-neutral-500 shadow-clay-1"
       >
         Показать ещё
       </button>
