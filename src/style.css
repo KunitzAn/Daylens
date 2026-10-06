@@ -200,6 +200,29 @@ body {
   background: var(--app-bg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+
+  /* Долгое нажатие на действие — наш собственный жест (открыть
+     редактирование, см. DayEntryForm). iOS на то же удержание запускает
+     свой: выделение текста и всплывающее «Скопировать». `select-none` на
+     самой кнопке это не лечило — Safari ищет, что выделить, выше по
+     дереву, и подсвечивал пол-экрана. Поэтому запрещаем выделение по
+     умолчанию для всего интерфейса и возвращаем его точечно там, где текст
+     действительно хочется скопировать (.selectable и поля ввода ниже).
+     -webkit-touch-callout убирает ту самую всплывашку с лупой. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Содержательный текст, а не интерфейс: заметка дня, почта аккаунта.
+   Поля ввода — отдельно: без этого в них ломается выделение при правке. */
+.selectable,
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Поверх пастельной базы (--app-bg) — градиентный «меш» из того же акцента,

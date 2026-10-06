@@ -8,6 +8,35 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const open = ref(false)
 const query = ref('')
 
+// Список открывался всегда вниз и у нижних действий в форме наполовину
+// уезжал за край экрана. Перед открытием меряем, где больше места, и
+// раскрываемся в эту сторону, а высоту списка подрезаем под то, что есть.
+const trigger = ref<HTMLElement | null>(null)
+const dropUp = ref(false)
+const listMaxHeight = ref(256)
+
+/** Поле поиска, отступы и заголовок — всё, что в карточке занимает место помимо списка. */
+const CHROME_PX = 92
+const MIN_LIST_PX = 150
+const MAX_LIST_PX = 320
+const EDGE_GAP_PX = 12
+
+function toggle() {
+  open.value = !open.value
+  if (!open.value) return
+
+  const rect = trigger.value?.getBoundingClientRect()
+  if (!rect) return
+  const below = window.innerHeight - rect.bottom - EDGE_GAP_PX
+  const above = rect.top - EDGE_GAP_PX
+
+  // Вверх разворачиваемся, только если снизу и правда тесно, а сверху
+  // просторнее: иначе список прыгал бы вверх при малейшем недостатке места.
+  dropUp.value = below < MIN_LIST_PX + CHROME_PX && above > below
+  const room = (dropUp.value ? above : below) - CHROME_PX
+  listMaxHeight.value = Math.min(MAX_LIST_PX, Math.max(MIN_LIST_PX, room))
+}
+
 // Ищем и по английскому имени иконки, и по русской подписи группы:
 // совпало название группы — показываем её целиком.
 const filteredGroups = computed(() => {
@@ -32,8 +61,9 @@ function pick(name: string) {
 <template>
   <div class="relative shrink-0">
     <button
+      ref="trigger"
       type="button"
-      @click="open = !open"
+      @click="toggle"
       class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 bg-surface"
       :style="{ borderColor: color ?? '#a78bfa', color: color ?? '#a78bfa' }"
     >
@@ -43,7 +73,8 @@ function pick(name: string) {
     <template v-if="open">
       <div class="fixed inset-0 z-40" @click="open = false" />
       <div
-        class="absolute z-50 mt-2 w-72 p-3 bg-surface rounded-2xl shadow-clay-3 flex flex-col gap-2"
+        class="absolute z-50 w-72 p-3 bg-surface rounded-2xl shadow-clay-3 flex flex-col gap-2"
+        :class="dropUp ? 'bottom-full mb-2' : 'top-full mt-2'"
       >
         <input
           v-model="query"
@@ -53,7 +84,12 @@ function pick(name: string) {
           class="rounded-xl bg-neutral-100 px-3 py-2 text-sm text-neutral-700 outline-none focus:ring-2 focus:ring-accent"
         />
 
-        <div class="max-h-64 overflow-y-auto flex flex-col gap-2">
+        <!-- overscroll-contain: долистав список до конца, палец не утаскивает
+             за собой страницу под открытым пикером. -->
+        <div
+          class="overflow-y-auto overscroll-contain flex flex-col gap-2"
+          :style="{ maxHeight: `${listMaxHeight}px` }"
+        >
           <section v-for="group in filteredGroups" :key="group.label" class="flex flex-col gap-1">
             <h3 class="text-[11px] text-neutral-400 sticky top-0 bg-surface py-1">{{ group.label }}</h3>
             <div class="grid grid-cols-6 gap-2">

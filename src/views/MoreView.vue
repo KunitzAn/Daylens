@@ -47,7 +47,7 @@ if ('serviceWorker' in navigator) {
         <p class="text-sm font-medium text-neutral-500">Аккаунт</p>
 
         <template v-if="me">
-          <p class="rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-1">
+          <p class="selectable rounded-2xl bg-surface p-4 text-sm text-neutral-700 shadow-clay-1">
             {{ me.email }}
           </p>
           <button

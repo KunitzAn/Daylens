@@ -82,6 +82,6 @@ const entryTags = computed(() =>
       </span>
     </div>
 
-    <p v-if="entry.note" class="text-sm text-neutral-700 whitespace-pre-line">{{ entry.note }}</p>
+    <p v-if="entry.note" class="selectable text-sm text-neutral-700 whitespace-pre-line">{{ entry.note }}</p>
   </article>
 </template>
