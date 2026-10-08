@@ -19,19 +19,26 @@ function parseLocalDate(date: string): Date {
   return new Date(year!, month! - 1, day!)
 }
 
+/**
+ * Форматирование не должно ронять экран. `Intl.DateTimeFormat.format()` на
+ * невалидной дате бросает RangeError — а зовут его прямо из рендера карточки
+ * в ленте. Одна битая строка в IndexedDB (недоехавшая запись, правка руками,
+ * старый формат) из-за этого обрушивала патч всего списка: шапка на месте,
+ * а ни карточек, ни заглушки «записей пока нет» — проверено, симптом ровно
+ * такой. Лучше прочерк в одной карточке, чем пустой дневник.
+ */
+function safeFormat(value: Date, options: Intl.DateTimeFormatOptions): string {
+  if (Number.isNaN(value.getTime())) return '—'
+  return new Intl.DateTimeFormat('ru-RU', options).format(value)
+}
+
 export function formatDateHuman(date: string): string {
-  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(
-    parseLocalDate(date),
-  )
+  return safeFormat(parseLocalDate(date), { day: 'numeric', month: 'long' })
 }
 
 /** «суббота, 29 авг.» — заголовок карточки в ленте. */
 export function formatDateWithWeekday(date: string): string {
-  return new Intl.DateTimeFormat('ru-RU', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short',
-  }).format(parseLocalDate(date))
+  return safeFormat(parseLocalDate(date), { weekday: 'long', day: 'numeric', month: 'short' })
 }
 
 /** Заглавная только первая буква: CSS `capitalize` задрал бы и «сент.» в «Сент.». */
@@ -41,9 +48,7 @@ export function capitalizeFirst(text: string): string {
 
 /** Время записи — из createdAt, не из даты дня. */
 export function formatTime(isoTimestamp: string): string {
-  return new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(
-    new Date(isoTimestamp),
-  )
+  return safeFormat(new Date(isoTimestamp), { hour: '2-digit', minute: '2-digit' })
 }
 
 export function isFutureDate(date: string): boolean {

@@ -3,7 +3,7 @@ import './style.css'
 import App from './App.vue'
 import { applyAccent, getActiveAccentId, watchColorScheme } from './lib/accents'
 import { ensureDefaultCategoriesSeeded } from './lib/db'
-import { installErrorOverlay, showError } from './lib/errorOverlay'
+import { componentTrace, installErrorOverlay, showError } from './lib/errorOverlay'
 import { router } from './router'
 import { installSyncTriggers, runSync } from './lib/sync'
 
@@ -35,8 +35,11 @@ async function bootstrap() {
 
   const app = createApp(App)
   // Ошибки рендера Vue ловит сам, до window.onerror они не доходят — без
-  // этого сломанный экран был бы просто белым.
-  app.config.errorHandler = (err) => showError('vue', err)
+  // этого сломанный экран был бы просто белым. instance и info не выбрасываем:
+  // минифицированный стек не говорит ничего, а цепочка компонентов и фаза
+  // («render function», «scheduler flush») говорят почти всё.
+  app.config.errorHandler = (err, instance, info) =>
+    showError('vue', err, `${componentTrace(instance)} · ${info}`)
   router.onError((err) => showError('router', err))
   app.use(router).mount('#app')
 
