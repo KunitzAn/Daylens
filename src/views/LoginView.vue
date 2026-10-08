@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ArrowLeft } from '@lucide/vue'
-import { ref } from 'vue'
+import { ArrowLeft, Fingerprint } from '@lucide/vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError } from '../lib/api'
 import { requestLoginCode, verifyLoginCode } from '../lib/auth'
+import { loginWithPasskey, passkeyAvailable, PasskeyCancelled } from '../lib/passkey'
 import { runSync } from '../lib/sync'
 
 const router = useRouter()
@@ -13,6 +14,33 @@ const code = ref('')
 const step = ref<'email' | 'code'>('email')
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+
+// Кнопку показываем, только если на устройстве есть встроенный аутентификатор.
+// Предлагать «вход по Face ID» там, где его нет, — обещание, которое не сдержим.
+const canUsePasskey = ref(false)
+const passkeyLoading = ref(false)
+onMounted(async () => {
+  canUsePasskey.value = await passkeyAvailable()
+})
+
+async function signInWithPasskey() {
+  passkeyLoading.value = true
+  errorMessage.value = null
+  try {
+    await loginWithPasskey()
+    void runSync()
+    router.push('/')
+  } catch (err) {
+    // Передумал прикладывать палец — молча возвращаем как было, это не ошибка.
+    if (err instanceof PasskeyCancelled) return
+    errorMessage.value =
+      err instanceof ApiError && err.status === 400
+        ? 'Этот ключ не подошёл. Войдите по коду с почты — и ключ можно будет завести заново.'
+        : 'Не получилось войти по Face ID. Попробуйте код с почты.'
+  } finally {
+    passkeyLoading.value = false
+  }
+}
 
 async function submitEmail() {
   if (!email.value.trim()) return
@@ -68,6 +96,25 @@ async function resend() {
       </header>
 
       <template v-if="step === 'email'">
+        <!-- Первым, до формы: если ключ заведён, это самый короткий путь —
+             вводить не нужно вообще ничего. -->
+        <template v-if="canUsePasskey">
+          <button
+            type="button"
+            :disabled="passkeyLoading"
+            @click="signInWithPasskey"
+            class="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 bg-surface text-neutral-700 font-medium shadow-clay-2 disabled:opacity-40"
+          >
+            <Fingerprint :size="18" class="text-accent-ink" />
+            {{ passkeyLoading ? 'Проверяю…' : 'Войти по Face ID' }}
+          </button>
+          <div class="flex items-center gap-3">
+            <span class="h-px flex-1 bg-neutral-100" />
+            <span class="text-xs text-neutral-400">или по коду с почты</span>
+            <span class="h-px flex-1 bg-neutral-100" />
+          </div>
+        </template>
+
         <p class="text-sm text-neutral-500">
           Без пароля — пришлём код на почту, введёте его здесь. Пригодится, если открываете
           Daylens на новом устройстве.

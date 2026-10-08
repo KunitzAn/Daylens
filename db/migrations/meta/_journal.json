@@ -8,6 +8,13 @@
       "when": 1789549796901,
       "tag": "0000_misty_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791450830331,
+      "tag": "0001_cheerful_paibok",
+      "breakpoints": true
     }
   ]
 }
